@@ -252,3 +252,94 @@ test('body-frame rotation preserves metre-scale clearance after Float32 quaterni
   rotateByConjugate([0, 0, Math.SQRT1_2, Math.SQRT1_2], [1, 0, 0], out);
   assert.ok(Math.abs(out[0]) < 1e-15 && Math.abs(out[1] + 1) < 1e-15 && Math.abs(out[2]) < 1e-15);
 });
+
+// Standalone browser-form and CLI inputs share these same public payload builders.
+const standalone = await load('src/standalone.js');
+const simpleTrajectory = { time: [0, 2], x: [7000000, 7000020], y: [0, 20], z: [1, 2] };
+const referenceColumns = { time: [0, 2], x: [10, 40], y: [20, 50], z: [30, 60], vx: [1, 4], vy: [2, 5], vz: [3, 6], qx: [0, 0], qy: [0, 0], qz: [0, 1], qw: [1, 0] };
+const referenceStructured = { time: [0, 2], spacecraft: [{ pos: [[10, 20, 30], [40, 50, 60]], vel: [[1, 2, 3], [4, 5, 6]], q: [[0, 0, 0, 1], [0, 0, 1, 0]] }] };
+const csvOf = (doc) => Object.keys(doc).join(',') + '\n' + doc.time.map((_, i) => Object.values(doc).map(values => values[i]).join(',')).join('\n');
+const referenceOptions = { name: 'planned path', lengthUnit: 'km', target: 1, color: '#123456', opacity: 0.3 };
+const assertReference = (reference) => {
+  assert.equal(reference.count, 2);
+  assert.deepEqual(Array.from(reference.t_s), [0, 2]);
+  assert.deepEqual(Array.from(reference.pos_km), [10, 20, 30, 40, 50, 60]);
+  assert.deepEqual(Array.from(reference.vel_kms), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(Array.from(reference.q), [0, 0, 0, 1, 0, 0, 1, 0]);
+};
+
+test('standalone references accept structured JSON, column JSON, CSV and parsed tables', async () => {
+  for (const data of [{ json: referenceColumns }, { json: referenceStructured }, { csv: csvOf(referenceColumns) }, { table: standalone.tableFromJson(referenceColumns) }]) {
+    const payload = await standalone.buildPayload({ json: simpleTrajectory, references: [{ ...referenceOptions, ...data }] });
+    assertReference(payload.references[0]);
+    for (const key of ['name', 'target', 'color', 'opacity']) assert.equal(payload.references[0][key], referenceOptions[key]);
+    assert.equal(payload.frames.pos_km[0], 7000); // Primary units stay independent.
+  }
+});
+
+test('the browser form JSON reference reaches the payload builder', async () => {
+  const html = await readFile(join(repo, 'viewer/standalone.html'), 'utf8');
+  const handler = html.slice(html.indexOf("form.addEventListener('submit'"), html.indexOf("reload.addEventListener"));
+  const upload = (name, doc) => ({ name, text: async () => JSON.stringify(doc) });
+  const fields = { 'sa-file': { files: [upload('run.json', simpleTrajectory)] }, 'sa-ref': { files: [upload('plan.JSON', referenceStructured)] }, 'sa-model': { files: [] } };
+  for (const [key, value] of Object.entries({ planet: 'earth', epoch: '2000-01-01T12:00:00Z', units: 'km', frames: '4000', dims: '1,1,1', mass: '100', title: 'fixture', trail: '1', 'ref-name': 'planned path' })) fields[`sa-${key}`] = { value };
+  let submit, received;
+  vm.runInNewContext(handler, { form: { addEventListener: (_, fn) => { submit = fn; } }, $: id => fields[id], triple: text => text.split(',').map(Number), open: async spec => { received = spec; }, console, say: message => assert.fail(message) });
+  await submit({ preventDefault() {} });
+  assert.ok(received.references[0].json);
+  const payload = await standalone.buildPayload(received);
+  assertReference(payload.references[0]);
+});
+
+test('the standalone CLI JSON reference reaches the payload builder', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const primary = join(scratch, 'run.json'), reference = join(scratch, 'plan.json'), output = join(scratch, 'embedded.html');
+  await writeFile(primary, JSON.stringify(simpleTrajectory));
+  await writeFile(reference, JSON.stringify(referenceStructured));
+  const built = spawnSync('python3', [join(repo, 'viewer/build_standalone.py'), '--textures', 'none', '--data', primary, '--reference', reference, '--reference-name', 'planned path', '--units', 'km', '--out', output], { encoding: 'utf8' });
+  assert.equal(built.status, 0, built.stderr);
+  const html = await readFile(output, 'utf8');
+  const match = html.match(/window\.SPACEAGORA_STANDALONE = (.*);/);
+  assert.ok(match);
+  const payload = await standalone.buildPayload(JSON.parse(match[1]));
+  assertReference(payload.references[0]);
+});
+
+const zRotation = (angle, scale = 1) => [0, 0, scale * Math.sin(angle / 2), scale * Math.cos(angle / 2)];
+const attitudeSample = (time, quaternions) => ({ json: { time, spacecraft: [{ pos: time.map(t => [7000000 + 10*t, 20*t, -30*t]), vel: time.map(() => [10, 20, -30]), q: quaternions }] } });
+const outputQuaternion = (payload, frame, sample) => Array.from(payload.frames.q.slice((frame * payload.frames.sats + sample)*4, (frame * payload.frames.sats + sample + 1)*4));
+const assertAttitude = (actual, expected) => {
+  assert.ok(actual.every(Number.isFinite));
+  assert.ok(Math.abs(Math.hypot(...actual) - 1) < 1e-7, `non-unit quaternion: ${actual}`);
+  const dot = actual.reduce((sum, value, i) => sum + value * expected[i], 0);
+  assert.ok(Math.abs(Math.abs(dot) - 1) < 1e-7, `wrong attitude: ${actual}, expected ${expected}`);
+};
+
+test('ensemble attitudes use the same physical rotation across antipodal samples', async () => {
+  const grid = [0, 1, 2, 3, 4], q = zRotation(1.2);
+  const payload = await standalone.buildEnsemblePayload({ samples: [attitudeSample(grid, grid.map(() => zRotation(0))), attitudeSample([0, 4], [q, q.map(v => -v)])] });
+  grid.forEach((_, frame) => assertAttitude(outputQuaternion(payload, frame, 1), q));
+});
+
+test('ensemble attitudes follow shortest-arc spherical interpolation on nonuniform grids', async () => {
+  const grid = [0, 0.5, 2, 2.5, 3, 4, 7], times = [0, 2, 7], angles = [0, Math.PI/2, Math.PI];
+  const payload = await standalone.buildEnsemblePayload({ samples: [attitudeSample(grid, grid.map(() => zRotation(0))), attitudeSample(times, angles.map((angle, i) => zRotation(angle, [2, -3, 4][i])))] });
+  grid.forEach((t, frame) => {
+    const angle = t <= 2 ? t * Math.PI/4 : Math.PI/2 + (t-2) * Math.PI/10;
+    assertAttitude(outputQuaternion(payload, frame, 1), zRotation(angle));
+    const p = (frame * 2 + 1) * 3;
+    assert.ok(Math.abs(payload.frames.pos_km[p] - (7000 + t*0.01)) < 1e-10);
+    assert.ok(Math.abs(payload.frames.vel_kms[p+1] - 0.02) < 1e-8);
+  });
+});
+
+test('ensemble quaternion gaps and single-row samples do not invent attitudes', async () => {
+  const grid = [0, 1, 2, 3, 4], q = zRotation(0.7);
+  const payload = await standalone.buildEnsemblePayload({ samples: [attitudeSample(grid, grid.map(() => zRotation(0))), attitudeSample([1, 3], [q, q]), attitudeSample([2], [q]), attitudeSample([0, 2, 4], [q, [0, 0, 0, 0], q])] });
+  for (const frame of [0, 4]) assert.ok(outputQuaternion(payload, frame, 1).every(Number.isNaN));
+  for (const frame of [1, 2, 3]) assertAttitude(outputQuaternion(payload, frame, 1), q);
+  for (const frame of [0, 1, 3, 4]) assert.ok(outputQuaternion(payload, frame, 2).every(Number.isNaN));
+  assertAttitude(outputQuaternion(payload, 2, 2), q);
+  for (const frame of [1, 2, 3]) assert.ok(outputQuaternion(payload, frame, 3).every(Number.isNaN));
+  for (const frame of [0, 4]) assertAttitude(outputQuaternion(payload, frame, 3), q);
+});

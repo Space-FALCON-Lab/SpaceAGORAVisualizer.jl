@@ -294,7 +294,7 @@ export function fileToDataUrl(file, mime) {
  * Build the full viewer payload.
  *   spec = { planet: 'venus', epoch: '1993-05-26T00:00:07Z', csv: text | table: {columns, rows, data} | json: {...},
  *            lengthUnit: 'm'|'km', maxFrames, spacecraft: [{ id, name, dims_m, mass_kg, links }],
- *            models: [{ id, dataUrl, filename, scale, rotation_deg }], references: [{ name, csv, lengthUnit, target, color }],
+ *            models: [{ id, dataUrl, filename, scale, rotation_deg }], references: [{ name, csv | table | json, lengthUnit, target, color }],
  *            paths: [...], options: { title, trail_orbits, frame, speed } }
  *   textures = window.SPACEAGORA_TEXTURES (planetKey -> { url, lon_left_deg, resolution, ... }) or {}
  */
@@ -313,7 +313,11 @@ export async function buildPayload(spec, textures = {}) {
     const id = m.id ?? specs[0].id;
     models[String(id)] = await buildModel(m);
   }
-  const references = (spec.references || []).map((r) => buildReference(r.table || parseCsv(r.csv), r));
+  const references = (spec.references || []).map((r) => {
+    const table = r.table || (r.csv ? parseCsv(r.csv) : r.json ? tableFromJson(r.json) : null);
+    if (!table) throw new Error(`reference "${r.name || 'reference'}": no trajectory data (csv, table or json)`);
+    return buildReference(table, r);
+  });
   const key = (spec.planet || 'earth').toLowerCase();
   const tex = textures[key] ? { [key]: textures[key] } : {};
   return { scene, frames, textures: tex, models, paths: spec.paths || [], references, options: Object.assign({ frame: 'inertial' }, spec.options || {}) };
@@ -358,6 +362,35 @@ function resample(tSrc, ySrc, tDst) {
   return out;
 }
 
+// Quaternions represent rotations, not four independent scalar channels. Normalize
+// source attitudes and use Three's hemisphere-aware shortest-arc SLERP. Missing
+// or invalid attitudes and times outside the sample span remain gaps, not identity.
+function resampleQuaternions(tSrc, columns, tDst) {
+  const out = Array.from({ length: 4 }, () => new Float64Array(tDst.length).fill(NaN));
+  const left = new THREE.Quaternion(), right = new THREE.Quaternion();
+  const read = (row, q) => {
+    const values = columns.map(column => column[row]);
+    const norm = Math.hypot(...values);
+    if (!values.every(Number.isFinite) || !Number.isFinite(norm) || norm === 0) return false;
+    q.set(...values.map(value => value / norm));
+    return true;
+  };
+  let j = 0;
+  for (let i = 0; i < tDst.length; i++) {
+    const t = tDst[i];
+    if (!Number.isFinite(t) || tSrc.length === 0 || t < tSrc[0] || t > tSrc[tSrc.length - 1]) continue;
+    while (j < tSrc.length - 1 && tSrc[j + 1] <= t) j++;
+    if (!read(j, left)) continue;
+    if (t !== tSrc[j]) {
+      const dt = tSrc[j + 1] - tSrc[j];
+      if (!(dt > 0) || !read(j + 1, right)) continue;
+      left.slerp(right, (t - tSrc[j]) / dt).normalize();
+    }
+    [left.x, left.y, left.z, left.w].forEach((value, c) => { out[c][i] = value; });
+  }
+  return out;
+}
+
 /**
  * Several trajectory files as one ensemble: each file's first spacecraft becomes
  * a pseudo-spacecraft on the first file's time grid; the first file is the
@@ -373,7 +406,10 @@ export async function buildEnsemblePayload(spec, textures = {}) {
     const t = timeColumn(tables[i]), d = tables[i].data, p = `sc${i + 1}_`;
     for (let c = 0; c < 3; c++) { merged.columns.push(`${p}pos_${c + 1}`); merged.data[`${p}pos_${c + 1}`] = resample(t, d[sets[i].pos[c]], tAxis); }
     if (sets.every((s) => s.vel)) for (let c = 0; c < 3; c++) { merged.columns.push(`${p}vel_${c + 1}`); merged.data[`${p}vel_${c + 1}`] = resample(t, d[sets[i].vel[c]], tAxis); }
-    if (sets.every((s) => s.q)) for (let c = 0; c < 4; c++) { merged.columns.push(`${p}q_${c + 1}`); merged.data[`${p}q_${c + 1}`] = resample(t, d[sets[i].q[c]], tAxis); }
+    if (sets.every((s) => s.q)) {
+      const q = resampleQuaternions(t, sets[i].q.map(column => d[column]), tAxis);
+      for (let c = 0; c < 4; c++) { merged.columns.push(`${p}q_${c + 1}`); merged.data[`${p}q_${c + 1}`] = q[c]; }
+    }
   }
   const nominal = Math.max(0, spec.samples.findIndex((s) => s.nominal));
   const single = Object.assign({}, spec, { table: merged, csv: null, json: null, samples: null,

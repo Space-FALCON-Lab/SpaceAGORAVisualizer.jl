@@ -7,8 +7,9 @@ scientific validation.
 
 The renderer originates in SpaceAGORA commit
 `265c9c6bd002d31aba77f4bb7cc46b48b48b98ed`. The extraction inventory records all
-39 original file identities. Independent review verified that the 33 protected
-JavaScript, vendor and HTML template files remain byte-identical and that the
+39 original file identities. At extraction commit `5cee95eda03621ee36e5251227ec10ae1026de9b`, independent
+review verified that the 33 protected JavaScript, vendor and HTML template
+files were byte-identical and that the
 Julia import-map and HTML assembly bodies are unchanged apart from the private
 render function name. Original license and third-party notices are retained.
 This repository starts with a small review base; source history is referenced
@@ -46,3 +47,27 @@ These checks used cached dependencies and existing browser tools. No simulation,
 new dataset, browser installation or planetary texture download was required.
 Pages with user-supplied external model URLs may still request those resources;
 explicit CDN builds are a separate network-enabled workflow.
+
+## Standalone importer follow-up
+
+Review of the extracted browser importer found two inherited defects: JSON
+reference trajectories reached the CSV parser, and ensemble attitudes were
+interpolated as four unrelated scalars. JSON references now use the same
+table/CSV/JSON selection as the primary trajectory. Ensemble quaternions use
+normalized, hemisphere-aware shortest-arc SLERP. Invalid attitudes and times
+outside a sample's span remain gaps; exact valid samples remain available.
+Position and velocity interpolation, core-exported payload conversion, vendor
+files and the remaining renderer files are unchanged.
+
+This is an intentional post-extraction change to `viewer/src/standalone.js`;
+[the repair record](../provenance/standalone-repair.json) preserves its original
+identity and the new hash. The historical extraction inventory is unchanged.
+Six new regression tests failed against the extraction commit. With the repair,
+all 19 Node tests and all 17 Python tests pass. The new cases exercise both JSON
+forms, the real browser form handler, Python CLI presets, antipodal attitudes,
+nonuniform time grids, unit normalization and missing attitudes. They also check
+that position and velocity interpolation is unchanged.
+
+These are local bounded checks. The earlier 124 Julia assertions and real-browser
+rendering check were not rerun for this JavaScript-only correction; no new
+scientific validation or hosted-CI result is implied.
