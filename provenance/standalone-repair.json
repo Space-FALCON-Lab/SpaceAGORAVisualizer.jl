@@ -1,0 +1,24 @@
+{
+  "baseline": "5cee95eda03621ee36e5251227ec10ae1026de9b",
+  "source": "viewer/src/standalone.js",
+  "original_git_blob": "1a0937573460208aa130ed8aea368ca55654f531",
+  "original_sha256": "1428f8d0bca04b631614ebcfb00816e0d62c02b45ec7d28943d3753ccaaa91b1",
+  "repaired_sha256": "6286fcab75359fd1fc62234719f05099503cca19cb88c42ce13cf92447006aec",
+  "intentional_changes": [
+    "Route JSON reference trajectories through tableFromJson, preserving table/CSV support.",
+    "Resample standalone ensemble attitudes with normalized hemisphere-aware shortest-arc SLERP; retain invalid/out-of-span gaps."
+  ],
+  "unchanged": "Core-exported numerical conversion, all other viewer source and vendor files, scalar position/velocity interpolation.",
+  "regressions": {
+    "new_tests_fail_before": 6,
+    "node_after": {
+      "passed": 19,
+      "failed": 0
+    },
+    "python_after": {
+      "passed": 17,
+      "failed": 0
+    }
+  },
+  "limits": "Local tests only. Browser form handler and actual CLI preset are exercised without WebGL; no full browser or Julia rerun for this repair."
+}
