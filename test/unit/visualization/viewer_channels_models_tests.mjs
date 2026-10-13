@@ -343,3 +343,46 @@ test('ensemble quaternion gaps and single-row samples do not invent attitudes', 
   for (const frame of [1, 2, 3]) assert.ok(outputQuaternion(payload, frame, 3).every(Number.isNaN));
   for (const frame of [0, 4]) assertAttitude(outputQuaternion(payload, frame, 3), q);
 });
+
+const { missionHistory, missionSegmentAt, Timeline } = await load('src/timeline.js');
+const missionFixture = JSON.parse(await readFile(join(repo, 'test/fixtures/mission_viewer.json'), 'utf8')).mission;
+
+test('actual mission history remains optional and unchanged', () => {
+  assert.equal(missionHistory(), null);
+  assert.equal(missionHistory(null), null);
+  const before = structuredClone(missionFixture);
+  assert.equal(missionHistory(missionFixture), missionFixture);
+  assert.deepEqual(missionFixture, before);
+  assert.equal(missionSegmentAt(null, 0), -1);
+  for (const [t, index] of [[-1, -1], [0, 0], [4.999, 0], [5, 1], [10, 1], [10.1, -1], [NaN, -1]]) {
+    assert.equal(missionSegmentAt(missionFixture, t), index);
+  }
+  const clock = new Timeline(0, 10, { speed: 1 });
+  clock.seek(5); assert.equal(missionSegmentAt(missionFixture, clock.t), 1);
+  clock.seek(4); clock.tick(1); assert.equal(missionSegmentAt(missionFixture, clock.t), 1);
+  const early = structuredClone(missionFixture); early.transitions.pop();
+  assert.equal(missionHistory(early), early);
+  const zero = structuredClone(missionFixture);
+  zero.segments[0].end_s = zero.segments[1].start_s = zero.transitions[0].time_s = 0;
+  assert.equal(missionHistory(zero), zero);
+  assert.equal(missionSegmentAt(zero, 0), 1);
+  const empty = { schema: 1, name: 'No executed segments', segments: [], transitions: [] };
+  assert.equal(missionHistory(empty), empty); assert.equal(missionSegmentAt(empty, 0), -1);
+});
+
+test('invalid mission history is rejected before renderer construction', () => {
+  for (const change of [
+    m => m.schema = true, m => m.schema = 2, m => m.name = ' ',
+    m => m.segments = 'coast', m => m.segments[0].start_s = -1,
+    m => m.segments[0].end_s = Infinity, m => m.segments[0].end_s = NaN,
+    m => m.segments[0].end_s = true, m => m.segments[1].name = 'coast',
+    m => m.segments[1].start_s = 6, m => m.segments[1].end_s = 4,
+    m => m.transitions[0].time_s = 4, m => m.transitions[0].from = 'unknown',
+    m => m.transitions[0].to = null, m => m.transitions[1].to = 'coast',
+    m => delete m.transitions[1].to, m => m.transitions[1].reason = ' ',
+    m => m.transitions = [],
+  ]) {
+    const mission = structuredClone(missionFixture); change(mission);
+    assert.throws(() => missionHistory(mission));
+  }
+});

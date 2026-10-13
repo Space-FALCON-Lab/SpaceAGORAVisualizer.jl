@@ -1,0 +1,24 @@
+{
+  "base_commit": "5afa5f5b528fa4704be1052da0e9ca45e9edb5c1",
+  "purpose": "Display optional recorded mission segments and transitions without changing simulation data.",
+  "files": [
+    {
+      "path": "viewer/src/main.js",
+      "previous_sha256": "58226ab9e1d956fec32ff0e2c2c2415cb89d55c4d8f1ff20a16abeb8bfeb7504",
+      "previous_git_blob": "cd12942d50d2748039aa72597569134b434ac3ba",
+      "sha256": "67e38616b059902f5bb980a13a50cc30270fddac18c7a5c787d5ec5a12db4868"
+    },
+    {
+      "path": "viewer/src/ui.js",
+      "previous_sha256": "bd77e5ce8913e27ee6da636837c80544eb9e47bae973a7058b2621354d08306d",
+      "previous_git_blob": "2e478cd5f9fcbd9ae094641e9c0c65af14f8be10",
+      "sha256": "aa2100272b7dd98db6e47a53e845964358d5e634e0347cc25c9cafbd916c6657"
+    },
+    {
+      "path": "viewer/src/timeline.js",
+      "previous_sha256": "e09bf441fe313ea150734bc83c30263d04ee56ce658aa7563d29102bf104625d",
+      "previous_git_blob": "bdaebb870467a26793b76a11f0001b4326c7919e",
+      "sha256": "913bfffba100ca7b7d734c4df0ad3c441349ca9483ebdb23594de44b81e510c7"
+    }
+  ]
+}

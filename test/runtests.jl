@@ -47,17 +47,26 @@ end
     provenance = JSON.parsefile(joinpath(ROOT, "provenance", "extraction.json"))
     immutable = filter(x -> startswith(x["path"], "viewer/src/") || startswith(x["path"], "viewer/vendor/") || x["path"] in ("viewer/template.html", "viewer/standalone.html", "viewer/dev.html"), provenance["files"])
     @test length(immutable) >= 30
-    # The extraction inventory is historical. One reviewed post-extraction
-    # repair has its own final pin; every other protected asset keeps its
-    # original pin. Bind the repair back to that original record as well.
+    # The extraction inventory is historical. Subsequent repairs and features
+    # have separate asset records, each bound back to the original inventory.
+    # Every unchanged protected asset retains its extraction pin.
     repair = JSON.parsefile(joinpath(ROOT, "provenance", "standalone-repair.json"))
     @test repair["source"] == "viewer/src/standalone.js"
     original = only(filter(entry -> entry["path"] == repair["source"], immutable))
     @test repair["original_sha256"] == original["sha256"]
     @test repair["original_git_blob"] == original["git_blob"]
     @test repair["repaired_sha256"] != original["sha256"]
+    feature = JSON.parsefile(joinpath(ROOT, "provenance", "mission-segments.json"))
+    changes = feature["files"]
+    @test Set(item["path"] for item in changes) == Set(["viewer/src/main.js", "viewer/src/ui.js", "viewer/src/timeline.js"])
+    feature_hashes = Dict(item["path"] => item["sha256"] for item in changes)
+    for change in changes
+        previous = only(filter(entry -> entry["path"] == change["path"], immutable))
+        @test change["previous_sha256"] == previous["sha256"]
+        @test change["previous_git_blob"] == previous["git_blob"]
+    end
     for entry in immutable
-        expected = entry["path"] == repair["source"] ? repair["repaired_sha256"] : entry["sha256"]
+        expected = get(feature_hashes, entry["path"], entry["path"] == repair["source"] ? repair["repaired_sha256"] : entry["sha256"])
         @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
@@ -154,4 +163,56 @@ end
     @test isempty(base64decode(empty["frames"]["pos_km"]))
     @test V.validate_payload(empty) === empty
     @test occursin("window.SPACEAGORA_VIEWER", V.render_viewer_html(empty))
+end
+
+@testset "Optional actual mission history" begin
+    p = JSON.parsefile(joinpath(@__DIR__, "fixtures", "mission_viewer.json"))
+    before = deepcopy(p)
+    @test V.validate_payload(p) === p
+    @test p == before
+    html = V.render_viewer_html(p)
+    embedded = match(r"window\.SPACEAGORA_VIEWER = (.*?);\n</script>"s, html)
+    @test JSON.parse(embedded.captures[1])["mission"] == p["mission"]
+    @test !any(x -> x.name == "SpaceAGORA", keys(Base.loaded_modules))
+    early = deepcopy(p); pop!(early["mission"]["transitions"])
+    @test V.validate_payload(early) === early
+    empty = deepcopy(p); empty["mission"]["segments"] = []; empty["mission"]["transitions"] = []
+    @test V.validate_payload(empty) === empty
+    zero = deepcopy(p)
+    zero["mission"]["segments"][1]["end_s"] = 0.0
+    zero["mission"]["segments"][2]["start_s"] = 0.0
+    zero["mission"]["transitions"][1]["time_s"] = 0.0
+    @test V.validate_payload(zero) === zero
+    mutations = (
+        m -> m["schema"] = true,
+        m -> m["schema"] = 2,
+        m -> m["name"] = " ",
+        m -> m["segments"] = "coast",
+        m -> m["segments"][1]["start_s"] = -1,
+        m -> m["segments"][1]["end_s"] = Inf,
+        m -> m["segments"][1]["end_s"] = NaN,
+        m -> m["segments"][1]["end_s"] = true,
+        m -> m["segments"][2]["name"] = "coast",
+        m -> m["segments"][2]["start_s"] = 6,
+        m -> m["segments"][2]["end_s"] = 4,
+        m -> m["transitions"][1]["time_s"] = 4,
+        m -> m["transitions"][1]["from"] = "unknown",
+        m -> m["transitions"][1]["to"] = nothing,
+        m -> m["transitions"][2]["to"] = "coast",
+        m -> delete!(m["transitions"][2], "to"),
+        m -> m["transitions"][2]["reason"] = " ",
+        m -> empty!(m["transitions"]),
+    )
+    for mutate in mutations
+        changed = deepcopy(p); mutate(changed["mission"])
+        @test_throws ArgumentError V.validate_payload(changed)
+    end
+    mktempdir() do directory
+        input = joinpath(directory, "run_viewer.json"); write(input, JSON.json(p))
+        output = V.visualize(directory)
+        original = read(output)
+        p["mission"]["schema"] = 2; write(input, JSON.json(p))
+        @test_throws ArgumentError V.visualize(directory)
+        @test read(output) == original
+    end
 end

@@ -1,6 +1,6 @@
 // DOM overlay: playback controls, display toggles, the run info panel and
 // the selected-spacecraft panel.
-import { utcString, elapsedString } from 'viewer/timeline.js';
+import { utcString, elapsedString, missionSegmentAt } from 'viewer/timeline.js';
 import { INFERNO_CSS } from 'viewer/colormaps.js';
 
 const SPEEDS = [1, 10, 60, 300, 600, 3600, 21600, 86400];
@@ -14,7 +14,7 @@ const TRAIL_CHOICES = [
   { label: 'all history', orbits: Infinity },
 ];
 
-export function createUI(container, timeline, state, info) {
+export function createUI(container, timeline, state, info, mission = null) {
   container.classList.add('sa-viewer-ui');
   const style = document.createElement('style');
   style.textContent = `
@@ -28,6 +28,7 @@ export function createUI(container, timeline, state, info) {
       border-radius: 4px; padding: 3px 9px; cursor: pointer; }
     .sa-ui button.active { background: #2f5d9e; border-color: #4f86d6; }
     .sa-ui button:focus-visible, .sa-ui select:focus-visible, .sa-ui input:focus-visible { outline: 2px solid #f2b950; outline-offset: 1px; }
+    .sa-ui [data-role=mission][hidden] { display: none; }
     .sa-ui input[type=range] { flex: 1 1 240px; min-width: 160px; }
     .sa-time { font-variant-numeric: tabular-nums; min-width: 22ch; }
     .sa-panel { position: absolute; padding: 8px 10px; max-width: 36ch;
@@ -136,6 +137,12 @@ export function createUI(container, timeline, state, info) {
       <input type="range" data-role="scrub" min="0" max="1" step="0.0001" value="0">
       <span class="sa-time" data-role="time"></span>
     </div>
+    <div class="sa-row" data-role="mission" style="margin-top:6px" hidden>
+      <label>Segment <select data-role="mission-segment" aria-label="Mission segment"></select></label>
+      <label>Transition <select data-role="mission-transition" aria-label="Mission transition"></select></label>
+      <span class="sa-time" data-role="mission-status"></span>
+      <span data-role="mission-coverage" hidden></span>
+    </div>
     <div class="sa-row sa-toggle" style="margin-top:6px">
       <span>Frame:</span>
       <button data-role="frame-inertial">Inertial</button>
@@ -171,6 +178,35 @@ export function createUI(container, timeline, state, info) {
 
   const q = (role) => ui.querySelector(`[data-role="${role}"]`);
   const play = q('play'), speed = q('speed'), scrub = q('scrub'), time = q('time');
+  const missionSegment = q('mission-segment'), missionTransition = q('mission-transition'), missionStatus = q('mission-status');
+  if (mission && mission.segments.length) {
+    q('mission').hidden = false;
+    const outside = time => time < timeline.tStart || time > timeline.tEnd;
+    const option = (select, value, label, disabled = false) => {
+      const item = document.createElement('option');
+      item.value = value; item.textContent = label; item.disabled = disabled; select.appendChild(item);
+    };
+    option(missionSegment, '', 'Jump to a segment');
+    mission.segments.forEach((segment, i) => option(missionSegment, String(i),
+      segment.name + (outside(segment.start_s) ? ' (start outside saved playback)' : ''), outside(segment.start_s)));
+    option(missionTransition, '', 'Jump to a recorded transition');
+    mission.transitions.forEach((transition, i) => option(missionTransition, String(i),
+      `${elapsedString(transition.time_s)} · ${transition.from} → ${transition.to ?? 'end'} (${transition.reason})` +
+        (outside(transition.time_s) ? ' (outside saved playback)' : ''), outside(transition.time_s)));
+    if (mission.segments.some(segment => outside(segment.start_s) || outside(segment.end_s))) {
+      q('mission-coverage').hidden = false;
+      q('mission-coverage').textContent = 'History extends beyond saved playback; unavailable jumps are disabled.';
+    }
+    missionTransition.disabled = mission.transitions.length === 0;
+    missionSegment.addEventListener('change', () => {
+      if (missionSegment.value !== '' && !missionSegment.selectedOptions[0].disabled) timeline.seek(mission.segments[Number(missionSegment.value)].start_s);
+      missionSegment.value = '';
+    });
+    missionTransition.addEventListener('change', () => {
+      if (missionTransition.value !== '' && !missionTransition.selectedOptions[0].disabled) timeline.seek(mission.transitions[Number(missionTransition.value)].time_s);
+      missionTransition.value = '';
+    });
+  }
   const frameInertial = q('frame-inertial'), frameFixed = q('frame-fixed'), follow = q('follow'), trail = q('trail');
 
   for (const s of SPEEDS) {
@@ -286,6 +322,11 @@ export function createUI(container, timeline, state, info) {
     play.textContent = timeline.playing ? 'Pause' : 'Play';
     if (!scrubbing) scrub.value = String(timeline.fraction());
     time.textContent = `${elapsedString(timeline.t - timeline.tStart)}  ${utcString(state.epochUtc, timeline.t)}`;
+    if (mission && mission.segments.length) {
+      const index = missionSegmentAt(mission, timeline.t);
+      missionStatus.textContent = index < 0 ? 'Outside recorded segments' :
+        `${mission.segments[index].name} · ${elapsedString(timeline.t - mission.segments[index].start_s)} in segment`;
+    }
     frameInertial.classList.toggle('active', state.frame === 'inertial');
     frameFixed.classList.toggle('active', state.frame === 'planet_fixed');
     follow.classList.toggle('active', state.follow);

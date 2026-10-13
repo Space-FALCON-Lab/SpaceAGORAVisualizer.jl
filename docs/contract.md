@@ -6,7 +6,8 @@ viewer-payload or scene version before rendering starts.
 
 New portable payloads declare `viewer_schema: 1`. They contain `scene`, `frames`
 and optional `textures`, `models`, `paths`, `references`, `terrain`, `ensemble`
-and `options` objects. Historical payloads without `viewer_schema` are accepted
+and `options` objects. An optional `mission` object carries recorded execution
+history. Historical payloads without `viewer_schema` are accepted
 as version 1 only if `scene.schema` is 1. Unknown explicit versions are refused.
 The current renderer and scene contract remain version 1; package version
 `0.1.0` is a separate release identifier.
@@ -46,3 +47,40 @@ the output is replaced. The browser is opened by the caller.
 Default exported pages embed their code and data. Explicit CDN conversion uses
 pinned external libraries, and user-supplied model URLs may fetch resources.
 These are distinct workflows and are not represented as offline guarantees.
+
+## Recorded mission history
+
+`mission.schema` is 1. `mission.name` identifies the run. Its `segments` array
+contains the actual executed intervals, each with a unique nonempty `name` and
+finite, nonnegative `start_s` and `end_s`. Times are elapsed seconds from the
+same epoch as `frames.t_s`. Intervals are ordered and contiguous, and a zero
+length interval is valid.
+
+`mission.transitions` records each change between adjacent segments. Each
+entry has `time_s`, `from`, `to`, and a nonempty `reason`. The time must equal
+the outgoing interval's end and the incoming interval's start. An optional
+last transition uses `to: null` to record the final exit, which may be an early
+stop rather than completed mission objectives; otherwise the last
+interval has no asserted exit event. An empty history has empty arrays.
+Configured but unentered segments and unfired event factories are not occurrence
+records and do not belong in these arrays.
+
+The renderer validates this structure without editing it. Mission fields are
+optional additions to viewer schema 1 and service contract 1. Historical
+payloads remain valid, and older renderers can ignore this extra object.
+
+Core retains exact boundary rows when they exist in the saved results, within
+the requested frame and data budget. If required boundary rows alone exceed
+that budget, export asks the caller to increase it. No sample is fabricated for
+a transition without a saved row. Within the saved playback range, such a
+transition remains selectable by its
+recorded time, and the viewer uses its usual interpolation between saved frames.
+Transitions and segment starts outside that range remain listed with disabled
+jump controls and a visible coverage notice.
+For boundary-aware sampling, `frames.stride_rows` is null when the retained
+rows differ from regular stride sampling. This is display metadata; `frames.t_s` remains the
+source of playback times.
+
+Mission names and transition reasons are rendered as text. They cannot insert
+markup into the toolbar. The companion has no dependency on mission builders,
+callbacks, controllers, or the SpaceAGORA package.
