@@ -1,0 +1,5 @@
+Manifest.toml
+viewer/dev_data.js
+__pycache__/
+*.pyc
+output/
