@@ -84,3 +84,13 @@ source of playback times.
 Mission names and transition reasons are rendered as text. They cannot insert
 markup into the toolbar. The companion has no dependency on mission builders,
 callbacks, controllers, or the SpaceAGORA package.
+
+Historical payloads may encode frame times as Float32. Mission timestamps retain
+their original numbers. For playback only, a mission timestamp is reconciled to
+its Float32 value when that value occurs exactly in the saved, finite,
+nondecreasing time grid. Bounds checks, jumps and active-segment labels use the
+same comparison. This handles encoding roundoff at a saved boundary without
+adding a general tolerance or extending trajectory coverage. Float64 times,
+unsaved boundary times and invalid grids retain strict comparisons. If several
+mission boundaries encode to one saved instant, the incoming segment is shown,
+with the last segment taking precedence at the terminal instant.

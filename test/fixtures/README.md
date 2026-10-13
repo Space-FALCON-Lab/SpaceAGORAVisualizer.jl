@@ -19,3 +19,7 @@ acceptance preserves the file contract; it does not assert a playable trajectory
 `mission_viewer.json` extends the small synthetic trajectory with a three-frame
 coast/maneuver history. It tests optional segment controls and the plain-data
 contract; it is not a scientific validation trajectory.
+
+`mission_precision_viewer.json` uses default Float32 playback times and exact
+mission timestamps at 0.1, 0.7 and 0.9 seconds. It checks both rounding directions
+and an internal segment boundary without changing the recorded history.

@@ -181,7 +181,7 @@ export function createUI(container, timeline, state, info, mission = null) {
   const missionSegment = q('mission-segment'), missionTransition = q('mission-transition'), missionStatus = q('mission-status');
   if (mission && mission.segments.length) {
     q('mission').hidden = false;
-    const outside = time => time < timeline.tStart || time > timeline.tEnd;
+    const outside = time => timeline.missionTime(time) < timeline.tStart || timeline.missionTime(time) > timeline.tEnd;
     const option = (select, value, label, disabled = false) => {
       const item = document.createElement('option');
       item.value = value; item.textContent = label; item.disabled = disabled; select.appendChild(item);
@@ -199,11 +199,11 @@ export function createUI(container, timeline, state, info, mission = null) {
     }
     missionTransition.disabled = mission.transitions.length === 0;
     missionSegment.addEventListener('change', () => {
-      if (missionSegment.value !== '' && !missionSegment.selectedOptions[0].disabled) timeline.seek(mission.segments[Number(missionSegment.value)].start_s);
+      if (missionSegment.value !== '' && !missionSegment.selectedOptions[0].disabled) timeline.seek(timeline.missionTime(mission.segments[Number(missionSegment.value)].start_s));
       missionSegment.value = '';
     });
     missionTransition.addEventListener('change', () => {
-      if (missionTransition.value !== '' && !missionTransition.selectedOptions[0].disabled) timeline.seek(mission.transitions[Number(missionTransition.value)].time_s);
+      if (missionTransition.value !== '' && !missionTransition.selectedOptions[0].disabled) timeline.seek(timeline.missionTime(mission.transitions[Number(missionTransition.value)].time_s));
       missionTransition.value = '';
     });
   }
@@ -323,7 +323,7 @@ export function createUI(container, timeline, state, info, mission = null) {
     if (!scrubbing) scrub.value = String(timeline.fraction());
     time.textContent = `${elapsedString(timeline.t - timeline.tStart)}  ${utcString(state.epochUtc, timeline.t)}`;
     if (mission && mission.segments.length) {
-      const index = missionSegmentAt(mission, timeline.t);
+      const index = missionSegmentAt(mission, timeline.t, timeline.missionTime);
       missionStatus.textContent = index < 0 ? 'Outside recorded segments' :
         `${mission.segments[index].name} · ${elapsedString(timeline.t - mission.segments[index].start_s)} in segment`;
     }

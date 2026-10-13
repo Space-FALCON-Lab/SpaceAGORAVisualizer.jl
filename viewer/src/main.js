@@ -129,7 +129,7 @@ export function start(payload, container = document.body) {
 
   const period = estimateOrbitPeriod(frames, 0);
   const span = frames.tEnd - frames.tStart;
-  const timeline = new Timeline(frames.tStart, frames.tEnd, { speed: options.speed ?? defaultSpeed(frames), autoplay: true });
+  const timeline = new Timeline(frames.tStart, frames.tEnd, { speed: options.speed ?? defaultSpeed(frames), autoplay: true, sampleTimes: frames.t });
 
   const state = {
     frame: options.frame === 'planet_fixed' ? 'planet_fixed' : 'inertial',

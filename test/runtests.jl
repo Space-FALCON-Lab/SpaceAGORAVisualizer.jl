@@ -216,3 +216,16 @@ end
         @test read(output) == original
     end
 end
+
+@testset "Legacy Float32 mission timestamp metadata stays exact" begin
+    p = JSON.parsefile(joinpath(@__DIR__, "fixtures", "mission_precision_viewer.json"))
+    @test get(p["frames"], "t_dtype", "f32") == "f32"
+    @test Float64(Float32(p["frames"]["t_s"][1])) > p["mission"]["segments"][1]["start_s"]
+    @test Float64(Float32(p["frames"]["t_s"][2])) < p["mission"]["transitions"][1]["time_s"]
+    before = deepcopy(p)
+    @test V.validate_payload(p) === p
+    html = V.render_viewer_html(p)
+    embedded = match(r"window\.SPACEAGORA_VIEWER = (.*?);\n</script>"s, html)
+    @test JSON.parse(embedded.captures[1]) == before
+    @test p == before
+end

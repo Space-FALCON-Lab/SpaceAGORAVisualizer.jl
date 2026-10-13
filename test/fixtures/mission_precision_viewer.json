@@ -1,0 +1,143 @@
+{
+  "viewer_schema": 1,
+  "scene": {
+    "schema": 1,
+    "epoch": {
+      "et_start_s": 0.0,
+      "utc": "2000-01-01T12:00:00Z"
+    },
+    "planet": {
+      "name": "Earth",
+      "equatorial_radius_m": 6378137.0,
+      "polar_radius_m": 6356752.3,
+      "spin_rad_s": [
+        0,
+        0,
+        7.292115e-05
+      ],
+      "texture": "earth",
+      "inertial_frame": "J2000",
+      "rotation": {
+        "t_s": [
+          0,
+          10
+        ],
+        "q_pi": [
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    "spacecraft": [
+      {
+        "id": 1,
+        "name": "Fixture",
+        "links": [
+          {
+            "name": "bus",
+            "root": true,
+            "dims_m": [
+              1,
+              1,
+              1
+            ],
+            "r_m": [
+              0,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "mass_kg": 10
+          }
+        ],
+        "thrusters": [],
+        "facets": [],
+        "joints": [],
+        "bounding_radius_m": 1.0
+      }
+    ],
+    "orientation_sim": false
+  },
+  "frames": {
+    "count": 3,
+    "sats": 1,
+    "t_s": [
+      0.1,
+      0.7,
+      0.9
+    ],
+    "pos_km": [
+      7000,
+      0,
+      0,
+      6999.5,
+      37.5,
+      0,
+      6999,
+      75,
+      0
+    ],
+    "vel_kms": [
+      -0.1,
+      7.5,
+      0,
+      -0.1,
+      7.5,
+      0,
+      -0.1,
+      7.5,
+      0
+    ],
+    "source_rows": 3,
+    "stride_rows": 1
+  },
+  "options": {
+    "frame": "inertial",
+    "speed": 1
+  },
+  "mission": {
+    "schema": 1,
+    "name": "Float32 mission boundaries",
+    "segments": [
+      {
+        "name": "coast",
+        "start_s": 0.1,
+        "end_s": 0.7
+      },
+      {
+        "name": "maneuver",
+        "start_s": 0.7,
+        "end_s": 0.9
+      }
+    ],
+    "transitions": [
+      {
+        "time_s": 0.7,
+        "from": "coast",
+        "to": "maneuver",
+        "reason": "deadline"
+      },
+      {
+        "time_s": 0.9,
+        "from": "maneuver",
+        "to": null,
+        "reason": "duration"
+      }
+    ]
+  }
+}

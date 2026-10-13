@@ -6,19 +6,21 @@
       "path": "viewer/src/main.js",
       "previous_sha256": "58226ab9e1d956fec32ff0e2c2c2415cb89d55c4d8f1ff20a16abeb8bfeb7504",
       "previous_git_blob": "cd12942d50d2748039aa72597569134b434ac3ba",
-      "sha256": "67e38616b059902f5bb980a13a50cc30270fddac18c7a5c787d5ec5a12db4868"
+      "sha256": "7340362885706d175a622df5e105078b622c78bf7df0dd8da1d73955387384da"
     },
     {
       "path": "viewer/src/ui.js",
       "previous_sha256": "bd77e5ce8913e27ee6da636837c80544eb9e47bae973a7058b2621354d08306d",
       "previous_git_blob": "2e478cd5f9fcbd9ae094641e9c0c65af14f8be10",
-      "sha256": "aa2100272b7dd98db6e47a53e845964358d5e634e0347cc25c9cafbd916c6657"
+      "sha256": "550c73ee999870f5b9fa794c4eeba4661a7735f5830d3c6d6003d824bda3b2d3"
     },
     {
       "path": "viewer/src/timeline.js",
       "previous_sha256": "e09bf441fe313ea150734bc83c30263d04ee56ce658aa7563d29102bf104625d",
       "previous_git_blob": "bdaebb870467a26793b76a11f0001b4326c7919e",
-      "sha256": "913bfffba100ca7b7d734c4df0ad3c441349ca9483ebdb23594de44b81e510c7"
+      "sha256": "cb45bcb80cb3a49016cbce1d835011fb5c8029229a110ee96e826688ce291eaf"
     }
-  ]
+  ],
+  "precision_repair_base_commit": "7d0d8b3d6fa07a16a396250638a3ac5ecd603ff8",
+  "precision_repair": "Reconcile mission timestamps only with exact Float32 values present in the finite, ordered saved frame grid."
 }

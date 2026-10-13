@@ -4,6 +4,7 @@ export class Timeline {
     this.tStart = tStart;
     this.tEnd = tEnd;
     this.t = tStart;
+    this.missionTime = missionTimeMapper(options.sampleTimes);
     this.playing = options.autoplay ?? true;
     this.speed = options.speed ?? 60; // simulated seconds per wall second
     this.loop = options.loop ?? false;   // playback stops at the end; Play from the end starts over
@@ -79,13 +80,37 @@ export function missionHistory(mission) {
   return mission;
 }
 
+// Reconcile metadata only when its Float32 encoding is an actual saved sample.
+// This is an encoding comparison, not an epsilon applied to simulation time.
+const unchangedTime = time => time;
+export function missionTimeMapper(sampleTimes) {
+  if (!(sampleTimes instanceof Float32Array) || sampleTimes.length === 0) return unchangedTime;
+  // FrameData accepts legacy grids without an order check. Decline this optional
+  // reconciliation for invalid grids, preserving their existing strict behavior.
+  for (let i = 0; i < sampleTimes.length; i++) {
+    if (!Number.isFinite(sampleTimes[i]) || (i > 0 && sampleTimes[i] < sampleTimes[i - 1])) return unchangedTime;
+  }
+  return time => {
+    if (!Number.isFinite(time)) return time;
+    const rounded = Math.fround(time);
+    if (!Number.isFinite(rounded)) return time;
+    let lo = 0, hi = sampleTimes.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (sampleTimes[mid] < rounded) lo = mid + 1; else hi = mid;
+    }
+    return lo < sampleTimes.length && sampleTimes[lo] === rounded ? sampleTimes[lo] : time;
+  };
+}
+
 // Adjacent boundaries belong to the incoming segment. Zero-length intervals
 // remain visible in the jump list; the final interval includes its terminal time.
-export function missionSegmentAt(mission, t) {
+export function missionSegmentAt(mission, t, mapTime = unchangedTime) {
   if (!mission || !Number.isFinite(t)) return -1;
   for (let i = mission.segments.length - 1; i >= 0; i--) {
     const segment = mission.segments[i];
-    if (t >= segment.start_s && (t < segment.end_s || (i === mission.segments.length - 1 && t === segment.end_s))) return i;
+    const start = mapTime(segment.start_s), end = mapTime(segment.end_s);
+    if (t >= start && (t < end || (i === mission.segments.length - 1 && t === end))) return i;
   }
   return -1;
 }
