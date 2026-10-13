@@ -1,0 +1,12 @@
+SpaceAGORAVisualizer includes the browser renderer extracted from SpaceAGORA.jl.
+Source: https://github.com/Space-FALCON-Lab/SpaceAGORA.jl
+Source commit: 265c9c6bd002d31aba77f4bb7cc46b48b48b98ed
+Copyright (c) 2025 Space-FALCON Lab; MIT license, retained in LICENSE.
+The original interactive viewer work was adapted from Evan Yu's PR121 at
+c03d1dce, as recorded by the source project's architecture documentation.
+
+provenance/extraction.json records every original extracted file and Git blob.
+Vendored Three.js and mp4-muxer retain their original notices and licenses under
+viewer/vendor/. The browser can display assets embedded in an input payload;
+those assets retain their own licenses and provenance. No simulation datasets
+or planetary textures are bundled in this extraction.

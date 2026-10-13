@@ -1,0 +1,280 @@
+{
+  "source_repository": "https://github.com/Space-FALCON-Lab/SpaceAGORA.jl",
+  "source_commit": "265c9c6bd002d31aba77f4bb7cc46b48b48b98ed",
+  "extraction_kind": "exact tracked blob extraction; original Git object identities retained in this manifest",
+  "files": [
+    {
+      "source": "viewer/README.md",
+      "path": "viewer/README.md",
+      "git_blob": "b082c562cc26e2225a5c49f974a48beea2fc9789",
+      "sha256": "7a2fac5d1159a732001965f9ce6abb263c230e1e78eed45006af0e502a1f990c",
+      "bytes": 17004
+    },
+    {
+      "source": "viewer/build_cdn_page.py",
+      "path": "viewer/build_cdn_page.py",
+      "git_blob": "d4a36b1d83bb6e040d04691330b5aba37e005060",
+      "sha256": "c9affff6be8289fd46f851402f5967fa19072225434bef206f1d924a97bbcbb6",
+      "bytes": 17819
+    },
+    {
+      "source": "viewer/build_standalone.py",
+      "path": "viewer/build_standalone.py",
+      "git_blob": "8fbacf0b78a5f7b0b30d2e5d4de48333064fc4d4",
+      "sha256": "cba7449d03ef88c7ba4d6b58792edf0c0f5ab46eb812e767240b4c6b19c6cde8",
+      "bytes": 12249
+    },
+    {
+      "source": "viewer/dev.html",
+      "path": "viewer/dev.html",
+      "git_blob": "d419e4c4147fcdc2031179a341f5815ce4e3f9ce",
+      "sha256": "50b2008ee57b992b6edb996ff317d49f7888654d535c5db8723044c0d5141846",
+      "bytes": 2522
+    },
+    {
+      "source": "viewer/src/atmosphere.js",
+      "path": "viewer/src/atmosphere.js",
+      "git_blob": "7d105a905165fc4054c627e5f4057bfbed92b6d5",
+      "sha256": "03dd2979071f9994ec93ee82fc2991d0370448b3c3621c6e9c9e57e6d896034e",
+      "bytes": 7459
+    },
+    {
+      "source": "viewer/src/colormaps.js",
+      "path": "viewer/src/colormaps.js",
+      "git_blob": "5ec00576ef392709ae4ca14286f0413b574a1c74",
+      "sha256": "959ea73bd290b927eb269250b170d2c5af83151346246de9b11df8de81762804",
+      "bytes": 2255
+    },
+    {
+      "source": "viewer/src/data.js",
+      "path": "viewer/src/data.js",
+      "git_blob": "0cb1467eb6b7eddcb37fae48f311318dd7586149",
+      "sha256": "0f84d81f218953cfe8e8ccf7952240cbdd064918dd50c8818d647029dd6f2625",
+      "bytes": 20749
+    },
+    {
+      "source": "viewer/src/dust.js",
+      "path": "viewer/src/dust.js",
+      "git_blob": "4c805f316b79b5da6ce6c2b61c97d676a13dfe27",
+      "sha256": "30969ed704c0e96bd182577ff0a52ba37bde195b6e576583b9f5bf5daa8d7c4d",
+      "bytes": 13978
+    },
+    {
+      "source": "viewer/src/ensemble.js",
+      "path": "viewer/src/ensemble.js",
+      "git_blob": "83f5afb66dfe26f7102ad33523a436e9d0521aac",
+      "sha256": "83319d322be4e7ee339da44df3b9d9f06098439e1a56905a907dcfdc7480210d",
+      "bytes": 19832
+    },
+    {
+      "source": "viewer/src/globe.js",
+      "path": "viewer/src/globe.js",
+      "git_blob": "3d1524dff7ea6bad99bbf538f263c65d3d4173a4",
+      "sha256": "6c0aadf5a725bc70936528df43661a10cb8af57ab25eaf05df17eeace9917592",
+      "bytes": 8180
+    },
+    {
+      "source": "viewer/src/groundtrack.js",
+      "path": "viewer/src/groundtrack.js",
+      "git_blob": "72d2147afb06a3e18228ac25eb54a9a10320e399",
+      "sha256": "8e5de2401e25ac00ce9cc20a0b21b23c2fd7f3ade18e477279ed7eba248b782e",
+      "bytes": 5690
+    },
+    {
+      "source": "viewer/src/lighting.js",
+      "path": "viewer/src/lighting.js",
+      "git_blob": "6afe3f83b61c966fec0f130f3c6afd20593667df",
+      "sha256": "1e63474824e063323d744144587e4052e35a477c46d6c3c84bc31443637f7046",
+      "bytes": 20948
+    },
+    {
+      "source": "viewer/src/lod.js",
+      "path": "viewer/src/lod.js",
+      "git_blob": "75a12f3de6671b6e2fbf965ad92659a4f797eeb4",
+      "sha256": "9c3ce40343d024e3c27e17432b6ac1c528b119a5a9104b061064b3d57273749c",
+      "bytes": 29455
+    },
+    {
+      "source": "viewer/src/main.js",
+      "path": "viewer/src/main.js",
+      "git_blob": "cd12942d50d2748039aa72597569134b434ac3ba",
+      "sha256": "58226ab9e1d956fec32ff0e2c2c2415cb89d55c4d8f1ff20a16abeb8bfeb7504",
+      "bytes": 35224
+    },
+    {
+      "source": "viewer/src/paths.js",
+      "path": "viewer/src/paths.js",
+      "git_blob": "5fadc6c2dc8140281e327daa81fc1af64f712dda",
+      "sha256": "6d5dcd4d4405519dd76bb968b907c4f25789d7c8e25b393d3b5c5dfe976bffce",
+      "bytes": 3143
+    },
+    {
+      "source": "viewer/src/plots.js",
+      "path": "viewer/src/plots.js",
+      "git_blob": "b58773ea390a4bfb8e99d908f56e233cff0761bb",
+      "sha256": "b9d117de19fb3a0c313a5c47aa0e7694ef4e7f4314d1f35ffa45065394e6f135",
+      "bytes": 11134
+    },
+    {
+      "source": "viewer/src/plumes.js",
+      "path": "viewer/src/plumes.js",
+      "git_blob": "b423724618bff2845e74d7010d3e8818425a3e5c",
+      "sha256": "e69bcb1d998e6a0b7de233f286c57695701ef665bcaa397ebc4d9df6b79bfd09",
+      "bytes": 12424
+    },
+    {
+      "source": "viewer/src/references.js",
+      "path": "viewer/src/references.js",
+      "git_blob": "a490d36f3f114ab18bdaa1481993594a6b8dcf3f",
+      "sha256": "46a88036ee4788ed3da2428b492b614d13dbb83c18959afa1d4a907b08cb7dde",
+      "bytes": 11415
+    },
+    {
+      "source": "viewer/src/spacecraft.js",
+      "path": "viewer/src/spacecraft.js",
+      "git_blob": "52189756820af8d2ef715e38f5826129bc0edd90",
+      "sha256": "d6e3a1a101b94b981db9651e70a31a2b8811cf88b0af209c6175ba5e5b2c403f",
+      "bytes": 13607
+    },
+    {
+      "source": "viewer/src/standalone.js",
+      "path": "viewer/src/standalone.js",
+      "git_blob": "1a0937573460208aa130ed8aea368ca55654f531",
+      "sha256": "1428f8d0bca04b631614ebcfb00816e0d62c02b45ec7d28943d3753ccaaa91b1",
+      "bytes": 22504
+    },
+    {
+      "source": "viewer/src/terrain.js",
+      "path": "viewer/src/terrain.js",
+      "git_blob": "7529de9dac0ba6a81f60648e37f5b9a974b68af0",
+      "sha256": "48cc38b3b71395c832d1a0c368407f3e66bfd489e54ffbb5017a4da28e462c3a",
+      "bytes": 43036
+    },
+    {
+      "source": "viewer/src/timeline.js",
+      "path": "viewer/src/timeline.js",
+      "git_blob": "bdaebb870467a26793b76a11f0001b4326c7919e",
+      "sha256": "e09bf441fe313ea150734bc83c30263d04ee56ce658aa7563d29102bf104625d",
+      "bytes": 2054
+    },
+    {
+      "source": "viewer/src/ui.js",
+      "path": "viewer/src/ui.js",
+      "git_blob": "2e478cd5f9fcbd9ae094641e9c0c65af14f8be10",
+      "sha256": "bd77e5ce8913e27ee6da636837c80544eb9e47bae973a7058b2621354d08306d",
+      "bytes": 2224039
+    },
+    {
+      "source": "viewer/src/video.js",
+      "path": "viewer/src/video.js",
+      "git_blob": "8f2ca243a857bed480e65660b03c759f1b051ccb",
+      "sha256": "0037700015e83156ceec60838206a5d72e55e38248ca294d643d70f316a438a1",
+      "bytes": 11187
+    },
+    {
+      "source": "viewer/standalone.html",
+      "path": "viewer/standalone.html",
+      "git_blob": "9ba318987fe4d631099c3dfd90b83d4b5d502694",
+      "sha256": "191c3f3f0a8d599c867b71086e78c7a13578b2913979342b01573c51de9363e1",
+      "bytes": 11689
+    },
+    {
+      "source": "viewer/template.html",
+      "path": "viewer/template.html",
+      "git_blob": "69134c4b99862bd121142a5a0c18090f5be5de32",
+      "sha256": "f1a4868304ed4b0a237fa13cefc97b948b82ef080c57110d38bbeaf578d5ffc2",
+      "bytes": 3360
+    },
+    {
+      "source": "viewer/vendor/BufferGeometryUtils.js",
+      "path": "viewer/vendor/BufferGeometryUtils.js",
+      "git_blob": "087878da3e5f593f586ea421da522fc0a8244c85",
+      "sha256": "9be041e96308775d00e2695cc607645b9a9b64fd7c0e759dd8f7c00a8d92becb",
+      "bytes": 31906
+    },
+    {
+      "source": "viewer/vendor/GLTFLoader.js",
+      "path": "viewer/vendor/GLTFLoader.js",
+      "git_blob": "c2528a0a9b914c68f98202925c4942dd41abbc46",
+      "sha256": "64abfbabd8356110b5de33c6c3a12c69bb43b68a6709af8a935b75f4f1480962",
+      "bytes": 108641
+    },
+    {
+      "source": "viewer/vendor/LICENSE.mp4-muxer",
+      "path": "viewer/vendor/LICENSE.mp4-muxer",
+      "git_blob": "06808a52c18071b028252a769cb974100496a947",
+      "sha256": "75c54aae7ef6ad652f684f9dd3b71e4dcef86ccebd88cf441ceed7f5eec037c5",
+      "bytes": 1065
+    },
+    {
+      "source": "viewer/vendor/LICENSE.three",
+      "path": "viewer/vendor/LICENSE.three",
+      "git_blob": "d07e209686512b9ac93d7df5481a4a6f622093e7",
+      "sha256": "852e0e8699169bf9f6fdc6bda3e682d078dcbc738b5d33e74df594721bff271d",
+      "bytes": 1081
+    },
+    {
+      "source": "viewer/vendor/OBJLoader.js",
+      "path": "viewer/vendor/OBJLoader.js",
+      "git_blob": "7792458abce807dcf6e5bbc81f289e1ee6925fa4",
+      "sha256": "022e0334f837c60506276e136faf3e54b21b20aea672eed4a0c50651d4fc0a5d",
+      "bytes": 21175
+    },
+    {
+      "source": "viewer/vendor/OrbitControls.js",
+      "path": "viewer/vendor/OrbitControls.js",
+      "git_blob": "c5d61cc888ef8271bd042c80d093530eabb7eac3",
+      "sha256": "b45c4204cf9ecc0af5ff5ddcf211e44eff911c3a8436545cf5b6edf4a4e1deb1",
+      "bytes": 30974
+    },
+    {
+      "source": "viewer/vendor/README.md",
+      "path": "viewer/vendor/README.md",
+      "git_blob": "60f2373203cbd905cd6cd75e7a29ac82842b33b9",
+      "sha256": "9c0a66b484ea36108127c400c60c0995e8b63514df505db6b92a94c308ddbe89",
+      "bytes": 471
+    },
+    {
+      "source": "viewer/vendor/STLLoader.js",
+      "path": "viewer/vendor/STLLoader.js",
+      "git_blob": "75d4f84586b83c46f982b972eeb94ef5a0461b1b",
+      "sha256": "896d006a48b8f125385a485ccae154dadee801a953f0b45ceffe7ddd8a29ca93",
+      "bytes": 10029
+    },
+    {
+      "source": "viewer/vendor/mp4-muxer.mjs",
+      "path": "viewer/vendor/mp4-muxer.mjs",
+      "git_blob": "3f3f4bbddc129b45b474b44d5f2357fab29b6f18",
+      "sha256": "69f25ab5dd735289936fedbf72a0430182f6c053a0cc6b555beefb810d3d2ca9",
+      "bytes": 68981
+    },
+    {
+      "source": "viewer/vendor/three.module.js",
+      "path": "viewer/vendor/three.module.js",
+      "git_blob": "0bcc7a286da2c115853ceec9deea19923e10ddc1",
+      "sha256": "76dea8151bc9352aef3528b4262e249b2604f62543828328db978d060d61a495",
+      "bytes": 1272972
+    },
+    {
+      "source": "LICENSE",
+      "path": "LICENSE",
+      "git_blob": "0add86b8c7b27ec3975d722e5e925d615dabb353",
+      "sha256": "ab970592fe84e05e94263ca62341898adf252ebaa409298c52dca6668a01dfb7",
+      "bytes": 1073
+    },
+    {
+      "source": "test/unit/visualization/viewer_channels_models_tests.mjs",
+      "path": "test/unit/visualization/viewer_channels_models_tests.mjs",
+      "git_blob": "1640d74895bcead4723c6babd842800c51b5e824",
+      "sha256": "7d15290180b06195cec216a17acb20790a209d9b47abac0faffd20d4130b52b6",
+      "bytes": 18693
+    },
+    {
+      "source": "test/scripts/test_build_cdn_page.py",
+      "path": "test/scripts/test_build_cdn_page.py",
+      "git_blob": "3cf59cab78826151e2e607c241f01a947e106fb9",
+      "sha256": "510f3097d5712f780dd1ae80decff9346b48dd54e35dcec849b71e01cd2a45cb",
+      "bytes": 12864
+    }
+  ]
+}

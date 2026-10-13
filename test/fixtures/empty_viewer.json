@@ -1,0 +1,111 @@
+{
+  "options": {
+    "frame": "inertial",
+    "speed": 1
+  },
+  "viewer_schema": 1,
+  "frames": {
+    "pos_dtype": "f64",
+    "thruster_level": null,
+    "mass_kg": null,
+    "arm_pose": null,
+    "channels": null,
+    "vel_kms": null,
+    "drag_n": null,
+    "plume": null,
+    "wind_ms": null,
+    "count": 0,
+    "q": null,
+    "sun_dir": null,
+    "link_pose": null,
+    "source_rows": 0,
+    "density_kg_m3": null,
+    "stride_rows": 1,
+    "thruster_counts": null,
+    "t_s": "",
+    "t_dtype": "f64",
+    "pos_km": "",
+    "sats": 1,
+    "heat_rate_w_m2": null
+  },
+  "scene": {
+    "spacecraft": [
+      {
+        "name": "Fixture",
+        "links": [
+          {
+            "name": "bus",
+            "root": true,
+            "r_m": [
+              0,
+              0,
+              0
+            ],
+            "mass_kg": 10,
+            "dims_m": [
+              1,
+              1,
+              1
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "bounding_radius_m": 1.0,
+        "id": 1,
+        "thrusters": [],
+        "facets": [],
+        "joints": []
+      }
+    ],
+    "epoch": {
+      "utc": "2000-01-01T12:00:00Z",
+      "et_start_s": 0.0
+    },
+    "orientation_sim": false,
+    "planet": {
+      "texture": "earth",
+      "name": "Earth",
+      "rotation": {
+        "q_pi": [
+          [
+            0,
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            1
+          ]
+        ],
+        "t_s": [
+          0,
+          10
+        ]
+      },
+      "equatorial_radius_m": 6.378137e6,
+      "polar_radius_m": 6.3567523e6,
+      "inertial_frame": "J2000",
+      "spin_rad_s": [
+        0,
+        0,
+        7.292115e-5
+      ]
+    },
+    "results": {
+      "feather": "simulation_results.feather",
+      "link_pose": {
+        "field": "link_pose",
+        "stride": 7
+      }
+    },
+    "schema": 1
+  }
+}

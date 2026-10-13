@@ -1,0 +1,191 @@
+{
+  "options": {
+    "frame": "inertial"
+  },
+  "frames": {
+    "pos_dtype": "f64",
+    "source_rows": 4,
+    "mass_kg": null,
+    "density_kg_m3": null,
+    "stride_rows": 1,
+    "arm_pose": null,
+    "vel_kms": null,
+    "drag_n": null,
+    "wind_ms": null,
+    "t_s": "AAAAAAAAAAAAAAAAAAAgQAAAAAAAACRA",
+    "t_dtype": "f64",
+    "count": 3,
+    "pos_km": "AAAAAABYu0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+H8AAAAAAAD4fwAAAAAAAPh/MzMzMzNXu0AAAAAAAABOQAAAAAAAAAAAAAAAAIBWu0AAAAAAAOBPQOxRuB6F65E/AAAAAABXu0AAAAAAAMBSQAAAAAAAAAAAAAAAAABWu0AAAAAAAABUQHsUrkfhepQ/",
+    "q": null,
+    "sats": 2,
+    "heat_rate_w_m2": null,
+    "link_pose": null
+  },
+  "ensemble": {
+    "spacecraft_per_sample": 1,
+    "scalar_name": "fixture scalar",
+    "samples": [
+      {
+        "label": "nominal",
+        "success": true,
+        "scalar": 1.0,
+        "seed": "1",
+        "index": 1,
+        "directory": "sample_0001"
+      },
+      {
+        "label": "delayed",
+        "success": true,
+        "scalar": 2.0,
+        "seed": "2",
+        "index": 2,
+        "directory": "sample_0002"
+      }
+    ],
+    "nominal": 0,
+    "count": 2
+  },
+  "textures": {},
+  "scene": {
+    "atmosphere": null,
+    "spacecraft": [
+      {
+        "name": "nominal/Fixture",
+        "links": [
+          {
+            "name": "bus",
+            "root": true,
+            "r_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mass_kg": 10.0,
+            "dims_m": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "q": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "bounding_radius_m": 1.0,
+        "stl_path": null,
+        "id": 1,
+        "thrusters": [],
+        "facets": [],
+        "arm": null,
+        "joints": []
+      },
+      {
+        "name": "delayed/Fixture",
+        "links": [
+          {
+            "name": "bus",
+            "root": true,
+            "r_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mass_kg": 10.0,
+            "dims_m": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "q": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "bounding_radius_m": 1.0,
+        "stl_path": null,
+        "id": 2,
+        "thrusters": [],
+        "facets": [],
+        "arm": null,
+        "joints": []
+      }
+    ],
+    "epoch": {
+      "utc": "2000-01-01T12:00:00Z",
+      "et_start_s": 0.0
+    },
+    "orientation_sim": false,
+    "planet": {
+      "texture": "earth",
+      "name": "Earth",
+      "rotation": {
+        "q_pi": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "t_s": [
+          0.0,
+          10.0
+        ]
+      },
+      "equatorial_radius_m": 6.378137e6,
+      "polar_radius_m": 6.3567523e6,
+      "spin_rad_s": [
+        0.0,
+        0.0,
+        7.292115e-5
+      ],
+      "inertial_frame": "J2000"
+    },
+    "results": {
+      "feather": "simulation_results.feather",
+      "arm_pose": {
+        "frame": "inertial, position relative to the spacecraft in meters",
+        "field": "arm_pose",
+        "stride": 7,
+        "layout": [
+          "rx",
+          "ry",
+          "rz",
+          "qx",
+          "qy",
+          "qz",
+          "qw"
+        ],
+        "columns": "sc{i}_arm_pose_{1..7n}"
+      },
+      "link_pose": {
+        "field": "link_pose",
+        "stride": 7,
+        "layout": [
+          "rx",
+          "ry",
+          "rz",
+          "qx",
+          "qy",
+          "qz",
+          "qw"
+        ],
+        "columns": "sc{i}_link_pose_{1..7n}"
+      }
+    },
+    "schema": 1
+  },
+  "models": {}
+}
