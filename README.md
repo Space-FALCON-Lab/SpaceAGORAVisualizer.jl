@@ -7,7 +7,16 @@ models and saved display channels come from the existing SpaceAGORA viewer.
 
 ## View a run
 
-Install this source checkout in a Julia 1.12 environment:
+Install the public development branch in a Julia 1.12 environment:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git",
+        rev="codex/extract-visualizer")
+```
+
+This branch is an unregistered, unreleased 0.1.0 preparation and may change
+before it is merged. To work from a local checkout instead, use:
 
 ```julia
 using Pkg
@@ -77,5 +86,5 @@ The Node suite exercises the real renderer modules and model loaders without
 WebGL. It does not replace a browser rendering check. The original source
 commit and file identities are recorded in [provenance/extraction.json](provenance/extraction.json).
 See [NOTICE](NOTICE), [LICENSE](LICENSE), and the third-party notices under
-`viewer/vendor/`. This is an unregistered 0.1.0 preparation; no package release
-or remote installation URL is implied by these local instructions.
+`viewer/vendor/`. The repository is public; the installation above selects the
+development branch while its initial pull request is under review.

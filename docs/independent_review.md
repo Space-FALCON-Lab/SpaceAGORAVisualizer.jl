@@ -71,3 +71,12 @@ that position and velocity interpolation is unchanged.
 These are local bounded checks. The earlier 124 Julia assertions and real-browser
 rendering check were not rerun for this JavaScript-only correction; no new
 scientific validation or hosted-CI result is implied.
+
+The subsequent hosted asset-integrity check still expected the original
+`standalone.js` hash. The test now checks that the reviewed repair record names
+that one file and matches its original SHA-256 and Git blob in the extraction
+inventory, then verifies the repaired hash. All other protected assets retain
+their original hashes; neither provenance record nor renderer source changed in
+this follow-up. Full local validation passed 128 Julia assertions (the original
+124 plus four provenance checks), 19 Node tests and 17 Python tests. This is a
+fresh local run, not a claim about the pending hosted checks.

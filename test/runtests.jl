@@ -47,8 +47,18 @@ end
     provenance = JSON.parsefile(joinpath(ROOT, "provenance", "extraction.json"))
     immutable = filter(x -> startswith(x["path"], "viewer/src/") || startswith(x["path"], "viewer/vendor/") || x["path"] in ("viewer/template.html", "viewer/standalone.html", "viewer/dev.html"), provenance["files"])
     @test length(immutable) >= 30
+    # The extraction inventory is historical. One reviewed post-extraction
+    # repair has its own final pin; every other protected asset keeps its
+    # original pin. Bind the repair back to that original record as well.
+    repair = JSON.parsefile(joinpath(ROOT, "provenance", "standalone-repair.json"))
+    @test repair["source"] == "viewer/src/standalone.js"
+    original = only(filter(entry -> entry["path"] == repair["source"], immutable))
+    @test repair["original_sha256"] == original["sha256"]
+    @test repair["original_git_blob"] == original["git_blob"]
+    @test repair["repaired_sha256"] != original["sha256"]
     for entry in immutable
-        @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == entry["sha256"]
+        expected = entry["path"] == repair["source"] ? repair["repaired_sha256"] : entry["sha256"]
+        @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
     @test length(imports) == length(V.VIEWER_MODULES) + length(V.VIEWER_VENDOR)
