@@ -29,6 +29,49 @@ const { chromium } = require('playwright');
     assert.equal(result.count, Number(process.argv[3] || 2)); assert.equal(result.sats, Number(process.argv[4] || 1)); assert.equal(result.canvas, true);
     assert.equal(result.frame, 'planet_fixed'); assert.ok(result.width > 0);
     assert.equal(result.initial, 5); assert.equal(result.final, 10);
+    const mission = await page.evaluate(() => window.spaceagoraViewer.mission);
+    if (mission && mission.segments.length) {
+      const bounds = await page.evaluate(() => [window.spaceagoraViewer.timeline.tStart, window.spaceagoraViewer.timeline.tEnd]);
+      const outside = time => time < bounds[0] || time > bounds[1];
+      if (!outside(mission.segments[0].start_s)) {
+        await page.selectOption('[data-role="mission-segment"]', '0');
+        assert.equal(await page.evaluate(() => window.spaceagoraViewer.timeline.t), mission.segments[0].start_s);
+        assert.equal(await page.inputValue('[data-role="mission-segment"]'), '');
+        // Seeking again to the current segment must work after playback advances.
+        await page.evaluate(() => {
+          const v = window.spaceagoraViewer, first = v.mission.segments[0];
+          v.renderAt((first.start_s + Math.min(first.end_s, v.timeline.tEnd)) / 2);
+        });
+        await page.selectOption('[data-role="mission-segment"]', '0');
+        assert.equal(await page.evaluate(() => window.spaceagoraViewer.timeline.t), mission.segments[0].start_s);
+      }
+      const disabled = await page.locator('[data-role="mission-transition"] option').evaluateAll(options => options.slice(1).map(option => option.disabled));
+      assert.deepEqual(disabled, mission.transitions.map(transition => outside(transition.time_s)));
+      const uncovered = mission.segments.some(segment => outside(segment.start_s) || outside(segment.end_s));
+      assert.equal(await page.locator('[data-role="mission-coverage"]').isVisible(), uncovered);
+      if (mission.transitions.length && !outside(mission.transitions[0].time_s)) {
+        await page.selectOption('[data-role="mission-transition"]', '0');
+        assert.equal(await page.evaluate(() => window.spaceagoraViewer.timeline.t), mission.transitions[0].time_s);
+        assert.equal(await page.inputValue('[data-role="mission-transition"]'), '');
+        assert.ok((await page.textContent('[data-role="mission-status"]')).includes(mission.transitions[0].to ?? mission.transitions[0].from));
+        await page.evaluate(() => {
+          const v = window.spaceagoraViewer;
+          v.renderAt(Math.min(v.timeline.tEnd, v.mission.transitions[0].time_s + 1));
+        });
+        await page.selectOption('[data-role="mission-transition"]', '0');
+        assert.equal(await page.evaluate(() => window.spaceagoraViewer.timeline.t), mission.transitions[0].time_s);
+      }
+      await page.evaluate(() => {
+        const v = window.spaceagoraViewer;
+        v.renderAt(v.mission.segments.at(-1).end_s);
+      });
+      assert.equal(await page.inputValue('[data-role="mission-segment"]'), '');
+      assert.ok((await page.textContent('[data-role="mission-status"]')).includes(mission.segments.at(-1).name));
+      // Saved names are text, including strings that resemble markup.
+      assert.equal(await page.locator('[data-role="mission"] img').count(), 0);
+    } else {
+      assert.equal(await page.locator('[data-role="mission"]').isVisible(), false);
+    }
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
     if (process.env.SPACEAGORA_BROWSER_SCREENSHOT) await page.screenshot({ path: process.env.SPACEAGORA_BROWSER_SCREENSHOT });
     console.log(JSON.stringify({ passed: true, ...result, unexpected_network_requests: external, errors }, null, 2));

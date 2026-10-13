@@ -7,16 +7,15 @@ models and saved display channels come from the existing SpaceAGORA viewer.
 
 ## View a run
 
-Install the public development branch in a Julia 1.12 environment:
+Install the public development version in a Julia 1.12 environment:
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git",
-        rev="codex/extract-visualizer")
+Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git")
 ```
 
-This branch is an unregistered, unreleased 0.1.0 preparation and may change
-before it is merged. To work from a local checkout instead, use:
+The package is an unregistered 0.1.0 development version. To work from a local
+checkout instead, use:
 
 ```julia
 using Pkg
@@ -50,6 +49,30 @@ HTML as a string. [The contract](docs/contract.md) describes versions and frame
 conventions. Installation into core's environment is optional; the package can
 render a payload in an environment containing only this package and its small
 JSON dependency.
+
+## Follow mission segments
+
+When the exported run includes operational segments, the playback toolbar shows
+its current segment and the time spent in it. Choose a segment to jump to its
+start, or choose a recorded transition to inspect the change. The transition
+list gives the elapsed mission time, the outgoing and incoming segments, and
+why the transition occurred. The final entry can record the end of the run,
+including an early stop.
+
+The labels come from the saved execution history. A segment that the simulation
+never entered does not appear. At a shared boundary, the incoming segment is
+shown in the status label; the final recorded time remains part of the last
+segment. Both jump lists return to their prompt after a selection, so you can
+revisit the same segment or transition as often as needed. A segment
+with zero duration remains available in the list, while playback selects the
+segment that follows it at that time. Jumps outside the saved trajectory time
+range are marked and disabled, with a notice explaining the missing playback
+coverage. The recorded history still carries their actual times.
+
+The mission record travels inside the viewer JSON, so these controls still work
+after you move the run or share its HTML page. Older payloads without mission
+history retain their existing playback controls. The viewer displays the saved
+trajectory between retained samples; it does not rerun segment transitions.
 
 ## Other trajectory files
 
@@ -86,5 +109,5 @@ The Node suite exercises the real renderer modules and model loaders without
 WebGL. It does not replace a browser rendering check. The original source
 commit and file identities are recorded in [provenance/extraction.json](provenance/extraction.json).
 See [NOTICE](NOTICE), [LICENSE](LICENSE), and the third-party notices under
-`viewer/vendor/`. The repository is public; the installation above selects the
-development branch while its initial pull request is under review.
+`viewer/vendor/`. The repository is public; the installation above selects its
+default branch.

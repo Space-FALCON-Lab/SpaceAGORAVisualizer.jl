@@ -14,7 +14,7 @@ import { createPaths } from 'viewer/paths.js';
 import { createReferences } from 'viewer/references.js';
 import { createGroundTracks } from 'viewer/groundtrack.js';
 import { TRAIL_COLOR_MODES } from 'viewer/spacecraft.js';
-import { Timeline } from 'viewer/timeline.js';
+import { Timeline, missionHistory } from 'viewer/timeline.js';
 import { createUI } from 'viewer/ui.js';
 import { createVideoDialog } from 'viewer/video.js';
 import { createPlotPanel } from 'viewer/plots.js';
@@ -26,6 +26,7 @@ const DEFAULT_TRAIL_ORBITS = 3;
 
 export function start(payload, container = document.body) {
   const { scene: sidecar, frames: rawFrames, textures = {}, models = {}, options = {}, ensemble: ensembleSpec = null, paths: pathSpecs = [], references: referenceSpecs = [], terrain: terrainSpec = null } = payload;
+  const mission = missionHistory(payload.mission);
   const frames = new FrameData(rawFrames);
   const planet = sidecar.planet;
   const Re = planet.equatorial_radius_m / 1000, Rp = planet.polar_radius_m / 1000;
@@ -128,7 +129,7 @@ export function start(payload, container = document.body) {
 
   const period = estimateOrbitPeriod(frames, 0);
   const span = frames.tEnd - frames.tStart;
-  const timeline = new Timeline(frames.tStart, frames.tEnd, { speed: options.speed ?? defaultSpeed(frames), autoplay: true });
+  const timeline = new Timeline(frames.tStart, frames.tEnd, { speed: options.speed ?? defaultSpeed(frames), autoplay: true, sampleTimes: frames.t });
 
   const state = {
     frame: options.frame === 'planet_fixed' ? 'planet_fixed' : 'inertial',
@@ -226,12 +227,13 @@ export function start(payload, container = document.body) {
     body: `${planet.name}${textures[textureKey] ? ` (${textures[textureKey].resolution || 'texture'}, GPU max ${renderer.capabilities.maxTextureSize}px)` : ' (no texture)'}`,
     epoch: sidecar.epoch.utc,
     spacecraft: String(frames.sats),
-    frames: `${frames.count} of ${frames.sourceRows} rows (every ${frames.strideRows})`,
+    frames: `${frames.count} of ${frames.sourceRows} rows (${frames.strideRows == null ? (mission ? 'mission boundaries retained' : 'saved sample times') : 'every ' + frames.strideRows})`,
     cadence: cadence > 0 ? `${cadence.toFixed(1)} s` : 'n/a',
     'orbit period': period > 0 && period < span ? `${(period / 60).toFixed(1)} min` : 'longer than run',
     attitude: frames.q ? 'saved quaternion' : 'velocity-aligned',
     lighting: lighting.status,
     'link poses': frames.linkPose ? 'recorded' : 'configured',
+    ...(mission ? { mission: mission.name } : {}),
     ...(ensemble ? { samples: `${ensembleSpec.count} × ${ensemble.perSample} spacecraft` } : {}),
     ...(refPaths.items.length ? { paths: refPaths.items.map((it) => it.spec.name).join(', ') } : {}),
     ...(refs.items.length ? { references: refs.items.map((it) => it.spec.name).join(', ') } : {}),
@@ -241,7 +243,7 @@ export function start(payload, container = document.body) {
       atmosphere: `${atmosphere.info.model.replace('AtmosphereModel', '')}, EI ${atmosphere.info.ei_km.toFixed(0)} km`,
       ...(atmosphere.info.map ? { 'density map': `${atmosphere.info.map.altitude_km.toFixed(0)} km, ${atmosphere.info.map.min.toExponential(1)}–${atmosphere.info.map.max.toExponential(1)} kg/m³` } : {}),
     } : {}),
-  });
+  }, mission);
   // Default trail coloring: heat rate when the run has it, else age.
   const initialColor = options.trail_color && TRAIL_COLOR_MODES[options.trail_color] ? options.trail_color : (frames.hasScalar('heat_rate') ? 'heat_rate' : 'age');
   ui.setTrailLegend(craft.setTrailColorMode(initialColor));
@@ -592,7 +594,7 @@ export function start(payload, container = document.body) {
   requestAnimationFrame(animate);
 
   const viewer = {
-    renderer, scene, camera, controls, world, globe, atmosphere, craft, lod, plumes, dust, ensemble, references: refs, paths: refPaths, groundTracks, timeline, frames, state, period, lighting,
+    renderer, scene, camera, controls, world, globe, atmosphere, craft, lod, plumes, dust, ensemble, references: refs, paths: refPaths, groundTracks, timeline, frames, state, period, lighting, mission,
     // Deterministic rendering for exports: seek and draw one frame at t.
     renderAt(t) { timeline.seek(t); frame(t); },
     setRecording(v) { recording = v; if (!v) resize(); },

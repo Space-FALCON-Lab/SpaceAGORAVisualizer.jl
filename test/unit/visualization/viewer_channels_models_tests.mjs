@@ -343,3 +343,90 @@ test('ensemble quaternion gaps and single-row samples do not invent attitudes', 
   for (const frame of [1, 2, 3]) assert.ok(outputQuaternion(payload, frame, 3).every(Number.isNaN));
   for (const frame of [0, 4]) assertAttitude(outputQuaternion(payload, frame, 3), q);
 });
+
+const { missionHistory, missionSegmentAt, missionTimeMapper, Timeline } = await load('src/timeline.js');
+const missionFixture = JSON.parse(await readFile(join(repo, 'test/fixtures/mission_viewer.json'), 'utf8')).mission;
+
+test('actual mission history remains optional and unchanged', () => {
+  assert.equal(missionHistory(), null);
+  assert.equal(missionHistory(null), null);
+  const before = structuredClone(missionFixture);
+  assert.equal(missionHistory(missionFixture), missionFixture);
+  assert.deepEqual(missionFixture, before);
+  assert.equal(missionSegmentAt(null, 0), -1);
+  for (const [t, index] of [[-1, -1], [0, 0], [4.999, 0], [5, 1], [10, 1], [10.1, -1], [NaN, -1]]) {
+    assert.equal(missionSegmentAt(missionFixture, t), index);
+  }
+  const clock = new Timeline(0, 10, { speed: 1 });
+  clock.seek(5); assert.equal(missionSegmentAt(missionFixture, clock.t), 1);
+  clock.seek(4); clock.tick(1); assert.equal(missionSegmentAt(missionFixture, clock.t), 1);
+  const early = structuredClone(missionFixture); early.transitions.pop();
+  assert.equal(missionHistory(early), early);
+  const zero = structuredClone(missionFixture);
+  zero.segments[0].end_s = zero.segments[1].start_s = zero.transitions[0].time_s = 0;
+  assert.equal(missionHistory(zero), zero);
+  assert.equal(missionSegmentAt(zero, 0), 1);
+  const empty = { schema: 1, name: 'No executed segments', segments: [], transitions: [] };
+  assert.equal(missionHistory(empty), empty); assert.equal(missionSegmentAt(empty, 0), -1);
+});
+
+test('invalid mission history is rejected before renderer construction', () => {
+  for (const change of [
+    m => m.schema = true, m => m.schema = 2, m => m.name = ' ',
+    m => m.segments = 'coast', m => m.segments[0].start_s = -1,
+    m => m.segments[0].end_s = Infinity, m => m.segments[0].end_s = NaN,
+    m => m.segments[0].end_s = true, m => m.segments[1].name = 'coast',
+    m => m.segments[1].start_s = 6, m => m.segments[1].end_s = 4,
+    m => m.transitions[0].time_s = 4, m => m.transitions[0].from = 'unknown',
+    m => m.transitions[0].to = null, m => m.transitions[1].to = 'coast',
+    m => delete m.transitions[1].to, m => m.transitions[1].reason = ' ',
+    m => m.transitions = [],
+  ]) {
+    const mission = structuredClone(missionFixture); change(mission);
+    assert.throws(() => missionHistory(mission));
+  }
+});
+
+test('Float32 mission times reconcile only with the actual saved grid', () => {
+  const grid = new Float32Array([0.1, 0.7, 0.9]);
+  const before = [...grid], map = missionTimeMapper(grid);
+  assert.ok(grid[0] > 0.1); assert.ok(grid[1] < 0.7);
+  assert.equal(map(0.1), grid[0]); assert.equal(map(0.7), grid[1]);
+  assert.equal(map(0.9), grid[2]); assert.equal(map(0.71), 0.71);
+  assert.equal(map(0.3), 0.3); // its rounded time is absent from the grid
+  assert.equal(map(Infinity), Infinity); assert.equal(map(1e100), 1e100);
+  assert.ok(Number.isNaN(map(NaN)));
+  assert.deepEqual([...grid], before);
+  assert.equal(missionTimeMapper(new Float32Array([0.1, 0.7, 0.7, 0.9]))(0.7), Math.fround(0.7));
+  const mission = { schema: 1, name: 'Precision fixture', segments: [
+    { name: 'coast', start_s: 0.1, end_s: 0.7 },
+    { name: 'maneuver', start_s: 0.7, end_s: 0.9 },
+  ], transitions: [{ time_s: 0.7, from: 'coast', to: 'maneuver', reason: 'deadline' }] };
+  const original = structuredClone(mission);
+  assert.equal(missionSegmentAt(mission, grid[0], map), 0);
+  assert.equal(missionSegmentAt(mission, grid[1], map), 1);
+  assert.equal(missionSegmentAt(mission, grid[2], map), 1);
+  assert.equal(missionSegmentAt(mission, grid[1]), 0); // Float64/strict behavior remains exact
+  assert.deepEqual(mission, original);
+  const terminal = new Timeline(grid[0], grid[1], { sampleTimes: grid });
+  terminal.seek(terminal.missionTime(0.7)); assert.equal(terminal.t, grid[1]);
+  assert.ok(terminal.missionTime(0.71) > terminal.tEnd);
+  terminal.seek(0.3); assert.equal(terminal.t, 0.3); // ordinary seeking is unchanged
+  const strict = missionTimeMapper(new Float64Array(grid));
+  assert.equal(strict(0.1), 0.1); assert.equal(strict(0.7), 0.7);
+  assert.ok(strict(0.1) < grid[0]); assert.ok(strict(0.7) > grid[1]);
+  for (const invalid of [null, [], new Float32Array(), new Float32Array([0.7, 0.1]),
+    new Float32Array([0.1, NaN, 0.7]), new Float32Array([0.1, Infinity])]) {
+    assert.equal(missionTimeMapper(invalid)(0.7), 0.7);
+  }
+  const collapsed = structuredClone(mission);
+  collapsed.segments.splice(1, 0, { name: 'brief mode', start_s: 0.7, end_s: 0.700000001 });
+  collapsed.segments[2].start_s = 0.700000001;
+  collapsed.transitions = [
+    { time_s: 0.7, from: 'coast', to: 'brief mode', reason: 'deadline' },
+    { time_s: 0.700000001, from: 'brief mode', to: 'maneuver', reason: 'duration' },
+  ];
+  assert.equal(missionHistory(collapsed), collapsed);
+  assert.equal(Math.fround(0.7), Math.fround(0.700000001));
+  assert.equal(missionSegmentAt(collapsed, grid[1], map), 2);
+});
