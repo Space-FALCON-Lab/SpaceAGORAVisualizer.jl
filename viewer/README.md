@@ -97,7 +97,7 @@ than one orbit shows "longer than run" and the trail covers the whole run).
 Click a quantity's name or value in the selection panel to plot its history.
 The **log** checkbox switches between logarithmic and linear axes; zeros are
 gaps on a logarithmic axis. Additional saved columns can be added with
-`channels`; see [Plot another saved value](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/265c9c6bd002d31aba77f4bb7cc46b48b48b98ed/docs/src/user/visualization.md#plot-another-saved-value)
+`channels`; see [Plot another saved value](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#plot-another-saved-value)
 for an example and explanations of absent rows, missing samples and held states.
 
 ## Close-up models
@@ -191,7 +191,8 @@ render loop stands still while recording. Import map key `mp4-muxer`.
 page that builds the payload in the browser from a CSV or JSON table, a body
 name and an epoch: IAU rotation table, box spacecraft, model override,
 reference ghost, and ensembles from several files. `data.js` accepts typed
-arrays as well as base64 blocks for that reason. See the user guide.
+arrays as well as base64 blocks for that reason. See the
+[standalone data-file guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#standalone-files).
 
 ## External-host page
 
@@ -274,9 +275,12 @@ verified study pressure or a replacement thermal solution.
 ## Conventions
 
 - Scene units are kilometers, J2000 axes.
-- Quaternions are scalar-last. A sidecar or state quaternion `q` is the
-  active body-to-inertial rotation, so it is applied to a three.js object
-  directly. (In Julia `rot(q)` is the passive inertial-to-body matrix.)
+- Quaternions use scalar-last order `[qx, qy, qz, qw]`. SpaceAGORA converts
+  coordinates with `v_body = rot(q) * v_inertial`. Three.js applies the same
+  saved `q` directly to the spacecraft object, with
+  `v_inertial = R_three(q) * v_body` and `R_three(q) = transpose(rot(q))` for
+  a unit quaternion. The browser uses the conjugate for the reverse coordinate
+  conversion. See the [payload contract](../docs/contract.md) for an example.
 - The sphere's texture seam is placed so that longitude 0 is on body +x; a
   texture whose left edge is not 180 W is shifted by its manifest
   `lon_left_deg`.

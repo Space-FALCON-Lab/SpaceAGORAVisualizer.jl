@@ -1,56 +1,103 @@
 # SpaceAGORAVisualizer.jl
 
-SpaceAGORAVisualizer turns an exported viewer payload into an interactive HTML
-page. It reads completed results and does not import SpaceAGORA, propagate a
-trajectory, or change a controller. The browser renderer, playback controls,
-models and saved display channels come from the existing SpaceAGORA viewer.
+SpaceAGORAVisualizer lets you explore a saved mission in an interactive 3D page.
+Play or scrub through a trajectory, inspect a spacecraft, compare runs and
+follow recorded mission segments. The page can be shared with someone who does
+not have Julia or SpaceAGORA installed.
 
-## View a run
+The package reads completed results. SpaceAGORA owns the simulation and creates
+the viewer data; this companion assembles the HTML and provides browser
+playback. It does not propagate a trajectory or change a controller.
 
-Install the public development version in a Julia 1.12 environment:
+Start with [installation](#installation) and the [first example](#first-example),
+then see [the SpaceAGORA connection](#connection-to-spaceagora),
+[compatibility](#compatibility), [validation and limitations](#validation-and-limitations)
+and [credits](#credits).
+
+## Installation
+
+Use Julia 1.12 and a separate environment to install the public development
+version:
 
 ```julia
 using Pkg
+Pkg.activate("viewer-env")
 Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git")
 ```
 
-The package is an unregistered 0.1.0 development version. To work from a local
-checkout instead, use:
+This installs the repository's default branch. The package is an unregistered
+0.1.0 development version, with no tagged release yet. For a local checkout,
+replace `Pkg.add` with `Pkg.develop(path="/absolute/path/to/SpaceAGORAVisualizer.jl")`.
 
-```julia
-using Pkg
-Pkg.develop(path="/absolute/path/to/SpaceAGORAVisualizer.jl")
-```
+If you are running missions from a SpaceAGORA checkout, use its
+[optional-viewer installer](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#install-the-optional-viewer).
+That helper selects the companion commit recorded in the parent checkout's
+`packages/VisualizerSource.toml`. It gives you the reviewed pair of packages;
+installing this repository's default branch follows its ongoing development.
 
-Then open an exported viewer payload:
+## First example
+
+This small example renders a bundled synthetic trajectory with mission segment
+labels. It checks the viewing workflow without running a simulation or
+downloading a dataset; the trajectory is not a scientific reference case.
 
 ```julia
 using SpaceAGORAVisualizer
+
+payload = joinpath(pkgdir(SpaceAGORAVisualizer), "test", "fixtures", "mission_viewer.json")
+page = visualize(payload; out=joinpath(pwd(), "viewer-demo.html"))
+println(page)
+```
+
+Open the printed HTML path in a browser. Drag to orbit, scroll to zoom, and
+use the timeline to play or scrub. Select a spacecraft to inspect it, or choose
+a mission segment to jump to its start. The [controls reference](viewer/README.md#controls)
+explains camera frames, saved plots, model views and video export.
+
+For your own completed run, pass its exported JSON, results prefix or directory:
+
+```julia
 page = visualize("output/my-run/simulation_results_viewer.json")
-# The results prefix or run directory works too:
 page = visualize("output/my-run/simulation_results")
 page = visualize("output/my-run")
 ```
 
-Open the returned HTML file in a browser. It embeds the renderer and the data,
-so a page whose assets are embedded can be viewed without a server or network.
-Models that reference external textures or buffers can still request those URLs.
-The package does not download planetary textures or simulation datasets.
+The input is an exported viewer payload. An Arrow results file or a
+`*_scene.json` sidecar must first be converted by SpaceAGORA. A directory selects
+`simulation_results_viewer.json` if present; otherwise it must contain exactly
+one `*_viewer.json`. Pass an explicit file when there are several. The default
+output replaces `.json` with `.html` beside the payload. Use `out` and `title`
+to choose another destination and page title.
 
-The input is an exported viewer payload, **not** an Arrow results file or the
-`*_scene.json` sidecar. SpaceAGORA's integration prepares the payload from those
-files. A directory selects `simulation_results_viewer.json` if present; otherwise
-there must be exactly one `*_viewer.json`. Pass an explicit file when there are
-several. The default output replaces `.json` with `.html` beside the payload;
-`out` and `title` can select another destination and page title.
+## Connection to SpaceAGORA
 
-For an already constructed payload, `render_viewer_html(payload)` returns the
-HTML as a string. [The contract](docs/contract.md) describes versions and frame
-conventions. Installation into core's environment is optional; the package can
-render a payload in an environment containing only this package and its small
-JSON dependency.
+The parent [mission workflow guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/mission_workflows.md)
+contains a complete Earth-coast recipe: define a configuration inside a function,
+create a `MissionPlan`, run it in a fresh output directory, then open its saved
+viewer payload. It uses analytic gravity and requires no atmosphere or SPICE
+dataset. The same guide extends that example with operational segments and
+explains which transitions the simulator supports.
 
-## Follow mission segments
+After running that recipe with both packages loaded, its `run` value can be
+viewed directly:
+
+```julia
+using SpaceAGORAVisualizer
+page = SpaceAGORAVisualizer.visualize(run)
+```
+
+A mission run normally saves `simulation_results_viewer.json`. For older runs
+with a saved scene and results bundle, SpaceAGORA's
+[`export_viewer_payload`](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md)
+creates that JSON without propagating again. The companion can then display it
+in an environment of its own. Choosing saved fields, units, frame sampling and
+export options belongs to SpaceAGORA; the companion preserves the supplied data.
+
+You can move the JSON or share its HTML page. The receiver does not need the
+mission builder or simulation packages. To rebuild the JSON later, keep the
+complete original run folder, including its scene, result bundle and manifest.
+
+### Follow mission segments
 
 When the exported run includes operational segments, the playback toolbar shows
 its current segment and the time spent in it. Choose a segment to jump to its
@@ -59,37 +106,66 @@ list gives the elapsed mission time, the outgoing and incoming segments, and
 why the transition occurred. The final entry can record the end of the run,
 including an early stop.
 
-The labels come from the saved execution history. A segment that the simulation
+The labels come from saved execution history. A segment that the simulation
 never entered does not appear. At a shared boundary, the incoming segment is
-shown in the status label; the final recorded time remains part of the last
-segment. Both jump lists return to their prompt after a selection, so you can
-revisit the same segment or transition as often as needed. A segment
-with zero duration remains available in the list, while playback selects the
-segment that follows it at that time. Jumps outside the saved trajectory time
-range are marked and disabled, with a notice explaining the missing playback
-coverage. The recorded history still carries their actual times.
+shown; the final recorded time remains part of the last segment. Both jump lists
+return to their prompt after a selection, so you can revisit the same event.
+A segment with zero duration remains in the list, while playback selects the
+segment that follows it at that time. Jumps outside the saved trajectory range
+are marked and disabled, with a notice explaining the missing coverage.
 
-The mission record travels inside the viewer JSON, so these controls still work
-after you move the run or share its HTML page. Older payloads without mission
-history retain their existing playback controls. The viewer displays the saved
-trajectory between retained samples; it does not rerun segment transitions.
+The mission record travels inside the JSON. Older payloads without that record
+retain the usual playback controls. Between saved samples, the viewer
+interpolates the displayed trajectory; it does not rerun segment transitions.
+
+## Compatibility
+
+| Item | Supported or checked |
+| --- | --- |
+| Julia | 1.12; the package declares `julia = "1.12"` |
+| Package version | 0.1.0 development version; no tagged release yet |
+| Renderer service, viewer payload and scene | Version 1; unknown explicit versions are rejected |
+| Historical payloads | Accepted without `viewer_schema` when `scene.schema` is 1 |
+| Recorded mission history | Optional schema 1; older payloads remain usable |
+| Parent used for the linked mission recipe | [SpaceAGORA `388b8801`](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/commit/388b8801b3e912c264b04a462b019acbaf1c0d1a) |
+| Companion selected by that parent's installer | [`6c008074`](https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl/commit/6c0080743c124e321d538f3780fa30868612da21) |
+
+The revision pair records a checked integration, not a requirement to install
+SpaceAGORA when viewing an exported file. The [payload contract](docs/contract.md)
+describes fields, units, quaternion conventions and version handling.
+`render_viewer_html(payload)` also accepts a constructed payload and returns the
+HTML as a string.
 
 ## Other trajectory files
 
-The inherited browser form accepts CSV or JSON trajectory tables without Julia:
+From a checkout of this repository, you can build a browser form that accepts
+CSV or JSON trajectory tables without Julia:
 
 ```sh
 python3 viewer/build_standalone.py --textures none --out viewer.html
 ```
 
-Open that page and choose the trajectory file, body, epoch and units. This
-standalone import uses approximate body rotation; it does not replace the
-rotation samples exported by SpaceAGORA. Planetary textures are not included in
-this package, so `--textures none` is the default. To use your own texture catalog, pass
+Open the page and choose the trajectory file, body, epoch and units. This import
+uses approximate body rotation rather than SpaceAGORA's saved rotation samples.
+Planetary textures are not bundled. To use an existing texture catalog, pass
 `--textures 4k --textures-dir=/path/to/textures`.
-See [renderer development and controls](viewer/README.md).
+See the parent's [standalone data-file guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#standalone-files).
 
-## Validation and provenance
+## Validation and limitations
+
+Default pages embed the renderer and data, so they can open from disk without
+a server or network when their input assets are embedded. Models with external
+textures or buffers can still request those URLs. Explicit CDN builds also use
+the network. The package does not download planetary textures or simulation
+datasets.
+
+Playback is a view of saved samples, not a new dynamics calculation. Missing
+samples and boundaries limit what can be inspected. Viewer-derived heating and
+dynamic-pressure overlays are illustrative; use the simulation's verified
+outputs for scientific conclusions. The browser needs WebGL, and video export
+also depends on the codecs available in that browser.
+
+From the repository root, the existing checks are:
 
 ```sh
 julia --project=. -e 'using Pkg; Pkg.test()'
@@ -97,17 +173,25 @@ node test/unit/visualization/viewer_channels_models_tests.mjs
 python3 -m unittest discover -s test/scripts -p 'test_*.py' -v
 ```
 
-An optional real-browser check uses an already installed Playwright and Chrome
-(or Chromium), without installing them as package dependencies:
+The Node suite checks renderer modules without WebGL. An optional browser smoke
+check uses an already installed Playwright and Chrome or Chromium:
 
 ```sh
 julia --project=. -e 'using SpaceAGORAVisualizer; visualize("test/fixtures/small_viewer.json"; out="/tmp/spaceagora-viewer-test.html")'
 SPACEAGORA_BROWSER_EXECUTABLE=/path/to/chrome node test/browser_smoke.cjs /tmp/spaceagora-viewer-test.html
 ```
 
-The Node suite exercises the real renderer modules and model loaders without
-WebGL. It does not replace a browser rendering check. The original source
-commit and file identities are recorded in [provenance/extraction.json](provenance/extraction.json).
-See [NOTICE](NOTICE), [LICENSE](LICENSE), and the third-party notices under
-`viewer/vendor/`. The repository is public; the installation above selects its
-default branch.
+These checks exercise rendering and the saved-data contract. They do not certify
+the physical model or the accuracy of a supplied trajectory.
+
+## Credits
+
+The browser renderer was extracted from SpaceAGORA and includes interactive
+viewer work adapted from Evan Yu's PR121. [NOTICE](NOTICE) records that origin;
+[the extraction inventory](provenance/extraction.json) retains the original
+commits and file identities. Later reviewed changes have their own records in
+[provenance/](provenance/).
+
+The package uses the [MIT license](LICENSE). Three.js and mp4-muxer retain their
+licenses and notices under [viewer/vendor/](viewer/vendor/). Assets supplied in a
+payload retain their own licenses and provenance.

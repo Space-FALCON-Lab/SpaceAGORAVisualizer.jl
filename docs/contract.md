@@ -24,9 +24,16 @@ matching repeated scene geometry. Encoded NaN gaps for unavailable sample times
 are preserved. Zero-row payloads remain accepted; they contain no trajectory to
 play back.
 
-Optional velocities are kilometres per second. Attitude quaternions are
-scalar-last, passive inertial-to-body. Link poses use the existing seven-value
-position/quaternion layout; the scene carries their frame and column metadata.
+Optional velocities are kilometres per second. Attitude quaternions use
+scalar-last order `[qx, qy, qz, qw]`. In SpaceAGORA, the coordinate conversion is
+`v_body = rot(q) * v_inertial`. Three.js applies the same stored quaternion to a
+model in the opposite direction: `v_inertial = R_three(q) * v_body`, where
+`R_three(q) = transpose(rot(q))` for a unit quaternion. No conjugation is needed
+when assigning that saved quaternion to a Three.js spacecraft object. Conjugate
+it when transforming an inertial vector into body coordinates in the browser.
+For example, `[0, 0, sin(π/4), cos(π/4)]` places body +x along inertial +y.
+Link poses use the existing seven-value position/quaternion layout; the scene
+carries their frame and column metadata.
 The renderer preserves these conventions and all supplied values. It does not
 regenerate ephemerides, reinterpret units or certify the underlying physics.
 Missing data and display-only overlays keep the inherited renderer behavior.
