@@ -305,6 +305,26 @@ test('the standalone CLI JSON reference reaches the payload builder', async () =
   assertReference(payload.references[0]);
 });
 
+test('standalone CSV heat rates convert from the saved W/cm² to the W/m² frame field', async () => {
+  const saved = { time: [0, 10, 20],
+    sc1_pos_1: [7000000, 7000100, 7000200], sc1_pos_2: [0, 0, 0], sc1_pos_3: [0, 0, 0], sc1_heat_rate: [0, 0.14, 0.0213],
+    sc2_pos_1: [0, 0, 0], sc2_pos_2: [7100000, 7100100, 7100200], sc2_pos_3: [0, 0, 0], sc2_heat_rate: [0.002, NaN, 1.5] };
+  const f = new FrameData((await standalone.buildPayload({ csv: csvOf(saved) })).frames);
+  assert.ok(f.hasScalar('heat_rate'));
+  saved.time.forEach((t, k) => {
+    [saved.sc1_heat_rate, saved.sc2_heat_rate].forEach((column, s) => {
+      const w_m2 = f.scalarAtIndex('heat_rate', k, s);
+      if (Number.isNaN(column[k])) assert.ok(Number.isNaN(w_m2));
+      else assert.equal(w_m2, Math.fround(column[k] * 1e4));
+    });
+    // The selection panel divides by 1e4 and shows the saved W/cm² again.
+    assert.ok(Math.abs(f.scalarAt('heat_rate', t, 0) / 1e4 - saved.sc1_heat_rate[k]) <= 1e-6 * saved.sc1_heat_rate[k]);
+  });
+  const without = await standalone.buildPayload({ csv: csvOf(simpleTrajectory) });
+  assert.equal(without.frames.heat_rate_w_m2, null);
+  assert.equal(new FrameData(without.frames).hasScalar('heat_rate'), false);
+});
+
 const zRotation = (angle, scale = 1) => [0, 0, scale * Math.sin(angle / 2), scale * Math.cos(angle / 2)];
 const attitudeSample = (time, quaternions) => ({ json: { time, spacecraft: [{ pos: time.map(t => [7000000 + 10*t, 20*t, -30*t]), vel: time.map(() => [10, 20, -30]), q: quaternions }] } });
 const outputQuaternion = (payload, frame, sample) => Array.from(payload.frames.q.slice((frame * payload.frames.sats + sample)*4, (frame * payload.frames.sats + sample + 1)*4));

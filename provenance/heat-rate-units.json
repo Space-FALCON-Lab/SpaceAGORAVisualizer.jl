@@ -1,0 +1,12 @@
+{
+  "base_commit": "6c57d42894678670d77152d60237cb6985bed63d",
+  "purpose": "Read the heat-rate column of a standalone CSV, saved by SpaceAGORA in W/cm², into the W/m² frame field heat_rate_w_m2.",
+  "files": [
+    {
+      "path": "viewer/src/standalone.js",
+      "previous_sha256": "6286fcab75359fd1fc62234719f05099503cca19cb88c42ce13cf92447006aec",
+      "previous_git_blob": "975d58076932f6b990f56d510679c0144808e367",
+      "sha256": "b4dc62a5a0173785ff63bcca3db87a069a6da592022ff4dd49d4d995b488a5aa"
+    }
+  ]
+}

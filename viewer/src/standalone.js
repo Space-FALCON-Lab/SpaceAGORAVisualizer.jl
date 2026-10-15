@@ -31,6 +31,8 @@ export const PLANETS = {
 
 const DEG = Math.PI / 180;
 const J2000_MS = Date.UTC(2000, 0, 1, 11, 58, 55, 816); // 2000-01-01T12:00:00 TDB is 11:58:55.816 UTC
+// SpaceAGORA saves `sc{i}_heat_rate` in W/cm²; frames.heat_rate_w_m2 is W/m².
+const HEAT_RATE_W_CM2_TO_W_M2 = 1e4;
 
 // Seconds past J2000 for an ISO UTC string (leap seconds ignored: < 1 min, i.e. < 0.3 deg of Earth rotation).
 export function secondsPastJ2000(utcIso) {
@@ -179,7 +181,7 @@ export function buildFrames(table, spacecraft, { lengthUnit = 'm', maxFrames = 4
       if (q) for (let c = 0; c < 4; c++) q[(f * S + s) * 4 + c] = d[set.q[c]][r];
       if (mass) mass[f * S + s] = d[set.mass][r];
       if (density) density[f * S + s] = d[set.density][r];
-      if (heat) heat[f * S + s] = d[set.heat][r];
+      if (heat) heat[f * S + s] = d[set.heat][r] * HEAT_RATE_W_CM2_TO_W_M2;
       if (drag) drag[f * S + s] = Math.hypot(d[set.drag[0]][r], d[set.drag[1]][r], d[set.drag[2]][r]);
       if (wind) for (let c = 0; c < 3; c++) wind[b3 + c] = d[set.wind[c]][r];
       if (lp && counts[s] > 0) for (let k = 0; k < 7 * counts[s]; k++) lp[f * total + offsets[s] + k] = d[set.linkPose[k]][r] * (k % 7 < 3 ? toM : 1);
