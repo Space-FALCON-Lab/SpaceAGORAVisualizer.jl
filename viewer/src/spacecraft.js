@@ -3,13 +3,15 @@
 // trails that fade with age for small runs, and name labels.
 import * as THREE from 'three';
 import { inferno } from 'viewer/colormaps.js';
+import { heatFluxForDisplay, HEAT_FLUX_UNIT } from 'viewer/data.js';
 
 export const TRAIL_MAX_SPACECRAFT = 64;
 // Trail color modes: 'age' fades with time; the others map a diagnostic
 // through inferno over the run's range (log scale for the physical ones).
+// `display` converts the frames' values to the label's unit for the legend.
 export const TRAIL_COLOR_MODES = {
   age: { label: 'age', log: false },
-  heat_rate: { label: 'heat rate (W/m²)', log: true },
+  heat_rate: { label: `heat rate (${HEAT_FLUX_UNIT})`, log: true, display: heatFluxForDisplay },
   dynamic_pressure: { label: 'dynamic pressure (Pa)', log: true },
   density: { label: 'density (kg/m³)', log: true },
   altitude: { label: 'altitude (km)', log: false },
@@ -261,14 +263,15 @@ export function createSpacecraft(frames, sidecar, options = {}) {
     get trailSeconds() { return trailSeconds; },
     setTrailSeconds(v) { trailSeconds = Math.max(0, v); },
     get trailColorMode() { return colorMode; },
-    // Returns the legend {label, lo, hi, log} (values in natural units), or null for 'age'.
+    // Returns the legend {label, lo, hi, log} (values in the label's unit), or null for 'age'.
     setTrailColorMode(mode) {
       if (!TRAIL_COLOR_MODES[mode] || (mode !== 'age' && !frames.hasScalar(mode))) mode = 'age';
       colorMode = mode;
       if (mode === 'age') return null;
       colorRange = scalarRange(mode);
       const { lo, hi, log } = colorRange;
-      return { label: TRAIL_COLOR_MODES[mode].label, lo: log ? Math.pow(10, lo) : lo, hi: log ? Math.pow(10, hi) : hi, log };
+      const display = TRAIL_COLOR_MODES[mode].display ?? ((v) => v);
+      return { label: TRAIL_COLOR_MODES[mode].label, lo: display(log ? Math.pow(10, lo) : lo), hi: display(log ? Math.pow(10, hi) : hi), log };
     },
     availableColorModes() { return Object.keys(TRAIL_COLOR_MODES).filter((m) => m === 'age' || frames.hasScalar(m)); },
     // markerHidden: per-spacecraft flags from the LOD layer; selected: index or -1;

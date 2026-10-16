@@ -3,7 +3,7 @@
 //   { scene, frames, textures, models, options }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { FrameData, geodetic, rotateByConjugate } from 'viewer/data.js';
+import { FrameData, geodetic, rotateByConjugate, heatFluxForDisplay, HEAT_FLUX_UNIT } from 'viewer/data.js';
 import { createGlobe } from 'viewer/globe.js';
 import { createSpacecraft, estimateOrbitPeriod } from 'viewer/spacecraft.js';
 import { createAssemblies } from 'viewer/lod.js';
@@ -308,7 +308,7 @@ export function start(payload, container = document.body) {
       add('density', 'density', 'kg/m³', 1, (t, o) => { o[0] = frames.scalarAt('density', t, s, Re); }, (o) => (o[0] > 0 ? `${o[0].toExponential(2)} kg/m³` : '0 (above atmosphere)'), { log: 'auto' });
       if (frames.hasScalar('dynamic_pressure')) add('dynamic_pressure', 'dyn. pressure', 'Pa', 1, (t, o) => { o[0] = frames.scalarAt('dynamic_pressure', t, s, Re); }, (o) => `${fmt(o[0], 3)} Pa`, { log: 'auto' });
     }
-    if (frames.hasScalar('heat_rate')) add('heat_rate', 'heat rate', 'W/cm²', 1, (t, o) => { o[0] = frames.scalarAt('heat_rate', t, s, Re) / 1e4; }, (o) => `${fmt(o[0], 4)} W/cm²`, { log: 'auto' });
+    if (frames.hasScalar('heat_rate')) add('heat_rate', 'heat rate', HEAT_FLUX_UNIT, 1, (t, o) => { o[0] = heatFluxForDisplay(frames.scalarAt('heat_rate', t, s, Re)); }, (o) => `${fmt(o[0], 4)} ${HEAT_FLUX_UNIT}`, { log: 'auto' });
     if (frames.hasScalar('drag')) add('drag', 'drag', 'N', 1, (t, o) => { o[0] = frames.scalarAt('drag', t, s, Re); }, (o) => `${fmt(o[0], 3)} N`, { log: 'auto' });
     if (frames.hasScalar('wind')) add('wind', 'wind', 'm/s', 1, (t, o) => { o[0] = frames.scalarAt('wind', t, s, Re); }, (o) => `${fmt(o[0], 1)} m/s`);
     if (frames.hasPlume()) {
@@ -364,10 +364,10 @@ export function start(payload, container = document.body) {
     const cosTheta = (t) => { const f = flowBody(t); return normalBody(t).dot(f); };
     add('incidence', 'incidence θ', '°', 1, (t, o) => { o[0] = THREE.MathUtils.radToDeg(Math.acos(Math.min(1, Math.max(-1, cosTheta(t))))); }, (o) => `${fmt(o[0], 1)}° ${o[0] < 90 ? '(windward)' : '(lee)'}`);
     if (frames.hasScalar('density')) {
-      add('flux', 'local heat flux ½ρV³cosθ', 'W/cm²', 1, (t, o) => {
+      add('flux', 'local heat flux ½ρV³cosθ', HEAT_FLUX_UNIT, 1, (t, o) => {
         const rho = frames.scalarAt('density', t, s, Re); const c = Math.max(0, cosTheta(t)); const v = Math.hypot(air[0], air[1], air[2]) * 1000;
-        o[0] = rho > 0 ? 0.5 * rho * v * v * v * c / 1e4 : 0;
-      }, (o) => `${o[0] > 0 ? o[0].toExponential(3) : '0'} W/cm²`, { log: 'auto' });
+        o[0] = rho > 0 ? heatFluxForDisplay(0.5 * rho * v * v * v * c) : 0;
+      }, (o) => `${o[0] > 0 ? o[0].toExponential(3) : '0'} ${HEAT_FLUX_UNIT}`, { log: 'auto' });
       add('ram', 'ram pressure ρV²cos²θ', 'Pa', 1, (t, o) => {
         const rho = frames.scalarAt('density', t, s, Re); const c = Math.max(0, cosTheta(t)); const v = Math.hypot(air[0], air[1], air[2]) * 1000;
         o[0] = rho > 0 ? rho * v * v * c * c : 0;

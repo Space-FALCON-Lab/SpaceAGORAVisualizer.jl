@@ -2,6 +2,7 @@
 // the selected-spacecraft panel.
 import { utcString, elapsedString, missionSegmentAt } from 'viewer/timeline.js';
 import { INFERNO_CSS } from 'viewer/colormaps.js';
+import { heatFluxForDisplay, HEAT_FLUX_UNIT } from 'viewer/data.js';
 
 const SPEEDS = [1, 10, 60, 300, 600, 3600, 21600, 86400];
 const TRAIL_CHOICES = [
@@ -278,8 +279,8 @@ export function createUI(container, timeline, state, info, mission = null) {
   function setHeatLegend(info) {
     heatLegend.hidden = !info;
     if (!info) return;
-    q('heat-lo').textContent = `${fmtLegend(info.lo / 1e4)}`;
-    q('heat-hi').textContent = `${fmtLegend(info.hi / 1e4)} W/cm² ½ρV³cosθ (log)`;
+    q('heat-lo').textContent = `${fmtLegend(heatFluxForDisplay(info.lo))}`;
+    q('heat-hi').textContent = `${fmtLegend(heatFluxForDisplay(info.hi))} ${HEAT_FLUX_UNIT} ½ρV³cosθ (log)`;
   }
   q('dust-label').hidden = !state.hasDust;
   q('dust').addEventListener('change', (e) => state.setDust(e.target.checked));

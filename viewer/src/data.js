@@ -8,10 +8,18 @@
 //   frames.vel_kms  Float32[N*S*3]     inertial velocity, km/s (optional)
 //   frames.q        Float32[N*S*4]     attitude, scalar-last, inertial->body passive (optional)
 //   frames.mass_kg  Float32[N*S]       total mass (optional)
+//   frames.heat_rate_w_m2 Float32[N*S] stagnation heat rate, W/m² (optional)
 //   frames.link_pose {stride, counts[S], offsets[S], total, data: Float32[N*total]} (optional)
 //   frames.sun_dir Float32[N*3]       unit vector planet center -> Sun, inertial (optional)
 //   frames.channels [{name, label, unit, digits, log, data: Float32[N*S]}] (optional)
 // Every block is base64 of little-endian floats.
+
+// Heat rates and heat fluxes are W/m² in the frames and in the heating
+// overlay's ½ρV³cosθ, and are shown in W/cm², the unit SpaceAGORA saves.
+// Every label, legend and plot of one goes through these.
+export const W_M2_PER_W_CM2 = 1e4;
+export const HEAT_FLUX_UNIT = 'W/cm²';
+export function heatFluxForDisplay(wPerM2) { return wPerM2 / W_M2_PER_W_CM2; }
 
 export function decodeBytes(b64) {
   if (b64 == null || b64.length === 0) return new Uint8Array(0);

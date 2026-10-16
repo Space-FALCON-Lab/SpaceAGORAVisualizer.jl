@@ -1,12 +1,36 @@
 {
   "base_commit": "6c57d42894678670d77152d60237cb6985bed63d",
-  "purpose": "Read the heat-rate column of a standalone CSV, saved by SpaceAGORA in W/cm², into the W/m² frame field heat_rate_w_m2.",
+  "purpose": "Read the heat-rate column of a standalone CSV, saved by SpaceAGORA in W/cm², into the W/m² frame field heat_rate_w_m2, and show every heat rate and heat flux in W/cm² through one shared conversion in data.js.",
   "files": [
     {
       "path": "viewer/src/standalone.js",
       "previous_sha256": "6286fcab75359fd1fc62234719f05099503cca19cb88c42ce13cf92447006aec",
       "previous_git_blob": "975d58076932f6b990f56d510679c0144808e367",
-      "sha256": "b4dc62a5a0173785ff63bcca3db87a069a6da592022ff4dd49d4d995b488a5aa"
+      "sha256": "5bc611919fd3bc8d877835179c672dbef66502f3bb33e557ae697d1cce074392"
+    },
+    {
+      "path": "viewer/src/data.js",
+      "previous_sha256": "0f84d81f218953cfe8e8ccf7952240cbdd064918dd50c8818d647029dd6f2625",
+      "previous_git_blob": "0cb1467eb6b7eddcb37fae48f311318dd7586149",
+      "sha256": "768c46829b9b38330755760f245e0796ab0c6e5d655b4673ed928584d00e2ea3"
+    },
+    {
+      "path": "viewer/src/spacecraft.js",
+      "previous_sha256": "d6e3a1a101b94b981db9651e70a31a2b8811cf88b0af209c6175ba5e5b2c403f",
+      "previous_git_blob": "52189756820af8d2ef715e38f5826129bc0edd90",
+      "sha256": "244d609c42eb8493b055f4c4b432a51d2ad4263bb079cde72539951ef0fc0163"
+    },
+    {
+      "path": "viewer/src/main.js",
+      "previous_sha256": "7340362885706d175a622df5e105078b622c78bf7df0dd8da1d73955387384da",
+      "previous_git_blob": "14aead0fec033f16f296894fa687b3de4bcf15e7",
+      "sha256": "cb0eec06f90a4b2d9582440ea6bb67ccae098f67ec088c46b20a00d52852e293"
+    },
+    {
+      "path": "viewer/src/ui.js",
+      "previous_sha256": "550c73ee999870f5b9fa794c4eeba4661a7735f5830d3c6d6003d824bda3b2d3",
+      "previous_git_blob": "bbd38af460892f40cc7f02e34f380ce9e73de7f0",
+      "sha256": "33615deb83e4edd5c25114282f73c4d7d0651581886ff1e912dfbbba73093c65"
     }
   ]
 }

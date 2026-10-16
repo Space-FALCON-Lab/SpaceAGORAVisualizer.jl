@@ -270,7 +270,10 @@ never enabled by scene or run export.
 Trails can be colored by heat rate, dynamic
 pressure, density, altitude or speed through inferno (`src/colormaps.js`);
 Heat rate, dynamic pressure and density use logarithmic color scales; altitude
-and speed use linear scales. Viewer-derived
+and speed use linear scales. Heat rates and heat fluxes are shown in W/cm² in
+the trail legend, the heating legend, the selection and face panels and their
+plots; the payload field `heat_rate_w_m2` stays in W/m², and `src/data.js`
+holds the one conversion between them. Viewer-derived
 dynamic pressure and surface heating are illustrative estimates, not the
 verified study pressure or a replacement thermal solution.
 
