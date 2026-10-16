@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { decodeBytes } from 'viewer/data.js';
+import { decodeBytes, W_M2_PER_W_CM2 } from 'viewer/data.js';
 
 // IAU 2009 (Archinal et al. 2011) pole (RA, Dec at J2000, degrees) and prime
 // meridian W = w0 + w1 * d (degrees, d = days past J2000 TDB); radii in meters.
@@ -179,7 +179,7 @@ export function buildFrames(table, spacecraft, { lengthUnit = 'm', maxFrames = 4
       if (q) for (let c = 0; c < 4; c++) q[(f * S + s) * 4 + c] = d[set.q[c]][r];
       if (mass) mass[f * S + s] = d[set.mass][r];
       if (density) density[f * S + s] = d[set.density][r];
-      if (heat) heat[f * S + s] = d[set.heat][r];
+      if (heat) heat[f * S + s] = d[set.heat][r] * W_M2_PER_W_CM2; // saved in W/cm², the frames hold W/m²
       if (drag) drag[f * S + s] = Math.hypot(d[set.drag[0]][r], d[set.drag[1]][r], d[set.drag[2]][r]);
       if (wind) for (let c = 0; c < 3; c++) wind[b3 + c] = d[set.wind[c]][r];
       if (lp && counts[s] > 0) for (let k = 0; k < 7 * counts[s]; k++) lp[f * total + offsets[s] + k] = d[set.linkPose[k]][r] * (k % 7 < 3 ? toM : 1);

@@ -191,7 +191,9 @@ render loop stands still while recording. Import map key `mp4-muxer`.
 page that builds the payload in the browser from a CSV or JSON table, a body
 name and an epoch: IAU rotation table, box spacecraft, model override,
 reference ghost, and ensembles from several files. `data.js` accepts typed
-arrays as well as base64 blocks for that reason. See the
+arrays as well as base64 blocks for that reason. A `sc{i}_heat_rate` column
+is read in W/cm², the unit SpaceAGORA saves, and stored as W/m² in
+`frames.heat_rate_w_m2`. See the
 [standalone data-file guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#standalone-files).
 
 ## External-host page
@@ -268,7 +270,10 @@ never enabled by scene or run export.
 Trails can be colored by heat rate, dynamic
 pressure, density, altitude or speed through inferno (`src/colormaps.js`);
 Heat rate, dynamic pressure and density use logarithmic color scales; altitude
-and speed use linear scales. Viewer-derived
+and speed use linear scales. Heat rates and heat fluxes are shown in W/cm² in
+the trail legend, the heating legend, the selection and face panels and their
+plots; the payload field `heat_rate_w_m2` stays in W/m², and `src/data.js`
+holds the one conversion between them. Viewer-derived
 dynamic pressure and surface heating are illustrative estimates, not the
 verified study pressure or a replacement thermal solution.
 

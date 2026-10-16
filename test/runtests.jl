@@ -65,8 +65,18 @@ end
         @test change["previous_sha256"] == previous["sha256"]
         @test change["previous_git_blob"] == previous["git_blob"]
     end
+    recorded(entry) = get(feature_hashes, entry["path"], entry["path"] == repair["source"] ? repair["repaired_sha256"] : entry["sha256"])
+    # The heat-rate units record changes files the records above already pin,
+    # so each of its entries starts from the hash those records give.
+    units = JSON.parsefile(joinpath(ROOT, "provenance", "heat-rate-units.json"))
+    unit_hashes = Dict(item["path"] => item["sha256"] for item in units["files"])
+    for change in units["files"]
+        previous = only(filter(entry -> entry["path"] == change["path"], immutable))
+        @test change["previous_sha256"] == recorded(previous)
+        @test change["sha256"] != change["previous_sha256"]
+    end
     for entry in immutable
-        expected = get(feature_hashes, entry["path"], entry["path"] == repair["source"] ? repair["repaired_sha256"] : entry["sha256"])
+        expected = get(unit_hashes, entry["path"], recorded(entry))
         @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
