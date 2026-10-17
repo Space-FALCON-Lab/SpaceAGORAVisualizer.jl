@@ -139,6 +139,12 @@ jet firing a fraction of a percent of its rating still reads; level 0 draws
 nothing and dims the static cone glyph. Toggle "plumes"; the selection panel
 lists a `thruster k level` row per thruster.
 
+A run that turns a thruster with a gimbal also writes
+`frames.thruster_direction` (`stride` 3, `counts`, `offsets`, `total` and
+Float32 `data`, frame-major then spacecraft then thruster): each thruster's
+exhaust direction in its link's frame. The cone glyph and the plume follow it,
+linearly between frames; without it they keep the scene's `direction`.
+
 ## Ensembles
 
 `payload.ensemble.nominal` (0-based sample index) marks the unperturbed

@@ -162,9 +162,11 @@ function plumeBuild(geometry, spec, index) {
 
 /**
  * createPlumes(sidecar, frames, lod, options)
- *   options.raw      the undecoded frames payload (carries thruster_level / thruster_counts)
+ *   options.raw      the undecoded frames payload (carries thruster_level / thruster_counts,
+ *                    and thruster_direction when the run turned a thruster with a gimbal)
  *   options.enabled  start visible (default true)
- * Returns { update(t), setVisible(v), visible, levelsAt(t, s, out), counts(s), available }.
+ * Returns { update(t), setVisible(v), visible, levelsAt(t, s, out), counts(s), available,
+ *           directionAt(t, s, k, out), directed }.
  */
 export function createPlumes(sidecar, frames, lod, options = {}) {
   const raw = options.raw || {};
@@ -177,6 +179,33 @@ export function createPlumes(sidecar, frames, lod, options = {}) {
     for (const n of counts || []) { offsets.push(acc); acc += n; }
   }
   const available = !!data && total > 0 && data.length >= frames.count * total;
+
+  // Exhaust directions per frame (three per thruster, in its link's frame, in
+  // the scene's order), present when a gimbal turned a thruster during the run.
+  const dirBlock = raw.thruster_direction || null;
+  const dirCounts = dirBlock && Array.isArray(dirBlock.counts) ? dirBlock.counts.map((n) => Number(n) || 0) : null;
+  const dirOffsets = dirBlock && Array.isArray(dirBlock.offsets) ? dirBlock.offsets.map((n) => Number(n) || 0) : null;
+  const dirTotal = dirBlock ? Number(dirBlock.total) || 0 : 0;
+  const dirData = dirCounts && dirOffsets && dirBlock.data ? decodeFloat32(dirBlock.data) : null;
+  const directed = !!dirData && dirTotal > 0 && dirData.length >= frames.count * dirTotal;
+
+  // Direction of thruster k of spacecraft s at time t, linear between the
+  // bracketing frames and normalized; null when the run saved none.
+  function directionAt(t, s, k, out) {
+    if (!directed || !dirCounts[s] || k >= dirCounts[s]) return null;
+    const o = dirOffsets[s] + 3 * k;
+    const { i, f } = frames.locate(t);
+    const a = i * dirTotal + o;
+    if (frames.count < 2) {
+      out.set(dirData[a], dirData[a + 1], dirData[a + 2]);
+    } else {
+      const b = (i + 1) * dirTotal + o;
+      out.set(dirData[a] + f * (dirData[b] - dirData[a]),
+        dirData[a + 1] + f * (dirData[b + 1] - dirData[a + 1]),
+        dirData[a + 2] + f * (dirData[b + 2] - dirData[a + 2]));
+    }
+    return out.lengthSq() > 0 ? out.normalize() : null;
+  }
 
   // Levels of spacecraft `s` at time t, linear between the bracketing frames.
   function levelsAt(t, s, out) {
@@ -219,7 +248,35 @@ export function createPlumes(sidecar, frames, lod, options = {}) {
         plumes.push({ ...built, cone });
       });
     }
-    items.push({ plumes, buffer: new Float32Array(Math.max(1, counts ? counts[s] : 1)) });
+    // Every thruster's cone and plume, paired as above, for the directions;
+    // cones exist even when the run saved no levels.
+    const turned = [];
+    if (directed && item && dirCounts[s] === specs.length) {
+      let ci = 0;
+      specs.forEach((spec, k) => {
+        if (!item.linkGroups[spec.link - 1]) { turned.push(null); return; }
+        const plume = plumes[k] || null;
+        turned.push({ cone: glyphs[ci++] || null, plume: plume ? plume.group : null });
+      });
+    }
+    items.push({ plumes, turned, buffer: new Float32Array(Math.max(1, counts ? counts[s] : 1)) });
+  }
+
+  const PLUME_AXIS = new THREE.Vector3(0, 1, 0);
+  const direction = new THREE.Vector3();
+  // Turn each cone (authored along +y, its own `userData.axis`) and plume to
+  // the direction at time t.
+  function applyDirections(t) {
+    if (!directed) return;
+    for (let s = 0; s < items.length; s++) {
+      const turned = items[s].turned;
+      for (let k = 0; k < turned.length; k++) {
+        const pair = turned[k];
+        if (!pair || !directionAt(t, s, k, direction)) continue;
+        if (pair.cone) pair.cone.quaternion.setFromUnitVectors(pair.cone.userData.axis || PLUME_AXIS, direction);
+        if (pair.plume) pair.plume.quaternion.setFromUnitVectors(PLUME_AXIS, direction);
+      }
+    }
   }
 
   let visible = (options.enabled ?? true) && available;
@@ -236,6 +293,8 @@ export function createPlumes(sidecar, frames, lod, options = {}) {
 
   return {
     available,
+    directed,
+    directionAt,
     group: null,   // the plumes live on the assemblies' link groups, not a group of their own
     counts(s) { return counts && counts[s] ? counts[s] : 0; },
     levelsAt,
@@ -254,6 +313,7 @@ export function createPlumes(sidecar, frames, lod, options = {}) {
       const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
       if (last !== null) clock += Math.min(0.25, Math.max(0, now - last));
       last = now;
+      applyDirections(t);
       if (!visible) return;
       for (let s = 0; s < items.length; s++) {
         const item = items[s];

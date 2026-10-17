@@ -472,3 +472,39 @@ test('Float32 mission times reconcile only with the actual saved grid', () => {
   assert.equal(Math.fround(0.7), Math.fround(0.700000001));
   assert.equal(missionSegmentAt(collapsed, grid[1], map), 2);
 });
+
+test('saved thruster directions turn the cone and the plume, and their absence leaves them', async () => {
+  const { createPlumes } = await load('src/plumes.js');
+  const f = new FrameData({ count: 2, sats: 1, t_s: [0, 10], pos_km: new Array(6).fill(0) });
+  const build = () => {
+    const link = new THREE.Group();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 8), new THREE.MeshStandardMaterial());
+    cone.userData.axis = new THREE.Vector3(0, 1, 0);
+    cone.quaternion.setFromUnitVectors(cone.userData.axis, new THREE.Vector3(0, 0, 1));
+    link.add(cone);
+    const spec = { thrusters: [{ link: 1, location_m: [0, 0, 0], direction: [0, 0, 1], max_thrust_n: 10 }] };
+    return { cone, lod: { items: [{ spec, linkGroups: [link], glyphs: { thrusters: [cone] } }] } };
+  };
+  const pointing = (object) => new THREE.Vector3(0, 1, 0).applyQuaternion(object.quaternion);
+  // The exhaust turns from +z to +x between the two frames; the thruster fires at both.
+  const block = { stride: 3, counts: [1], offsets: [0], total: 3, data: [0, 0, 1, 1, 0, 0] };
+  const { cone, lod } = build();
+  const plumes = createPlumes({}, f, lod, { raw: { thruster_direction: block, thruster_level: [1, 1], thruster_counts: [1] } });
+  assert.equal(plumes.directed, true);
+  plumes.update(10);
+  assert.ok(pointing(cone).distanceTo(new THREE.Vector3(1, 0, 0)) < 1e-6);
+  const plume = lod.items[0].linkGroups[0].children.find((o) => o.name === 'plume:0');
+  assert.ok(plume && pointing(plume).distanceTo(new THREE.Vector3(1, 0, 0)) < 1e-6);
+  plumes.update(5);
+  assert.ok(pointing(cone).distanceTo(new THREE.Vector3(Math.SQRT1_2, 0, Math.SQRT1_2)) < 1e-6);
+  // Directions turn the cone also when the run saved no firing levels.
+  const bare = build();
+  createPlumes({}, f, bare.lod, { raw: { thruster_direction: block } }).update(10);
+  assert.ok(pointing(bare.cone).distanceTo(new THREE.Vector3(1, 0, 0)) < 1e-6);
+  // Without the block the cone keeps its scene direction.
+  const plain = build();
+  const none = createPlumes({}, f, plain.lod, { raw: {} });
+  assert.equal(none.directed, false);
+  none.update(10);
+  assert.ok(pointing(plain.cone).distanceTo(new THREE.Vector3(0, 0, 1)) < 1e-6);
+});
