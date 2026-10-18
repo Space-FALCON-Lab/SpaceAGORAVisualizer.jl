@@ -1,0 +1,12 @@
+{
+  "base_commit": "31a62181653e57cd7ae769ce26d954afa94e704d",
+  "purpose": "Turn each thruster's cone glyph and plume with the per-frame exhaust directions SpaceAGORA saves when a run turns a thruster with a gimbal (frames.thruster_direction); without that block nothing changes.",
+  "files": [
+    {
+      "path": "viewer/src/plumes.js",
+      "previous_sha256": "e69bcb1d998e6a0b7de233f286c57695701ef665bcaa397ebc4d9df6b79bfd09",
+      "previous_git_blob": "b423724618bff2845e74d7010d3e8818425a3e5c",
+      "sha256": "5c3718ca628e20804461e34e5bbb9c46e7457211c95ec08aa8bfe9fbd012913a"
+    }
+  ]
+}
