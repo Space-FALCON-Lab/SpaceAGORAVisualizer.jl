@@ -75,8 +75,18 @@ end
         @test change["previous_sha256"] == recorded(previous)
         @test change["sha256"] != change["previous_sha256"]
     end
+    pinned(entry) = get(unit_hashes, entry["path"], recorded(entry))
+    # The thruster-directions record changes a file the records above pin, so
+    # each of its entries starts from the hash they give.
+    directions = JSON.parsefile(joinpath(ROOT, "provenance", "thruster-directions.json"))
+    direction_hashes = Dict(item["path"] => item["sha256"] for item in directions["files"])
+    for change in directions["files"]
+        previous = only(filter(entry -> entry["path"] == change["path"], immutable))
+        @test change["previous_sha256"] == pinned(previous)
+        @test change["sha256"] != change["previous_sha256"]
+    end
     for entry in immutable
-        expected = get(unit_hashes, entry["path"], recorded(entry))
+        expected = get(direction_hashes, entry["path"], pinned(entry))
         @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
