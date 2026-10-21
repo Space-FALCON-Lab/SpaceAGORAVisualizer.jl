@@ -1,5 +1,11 @@
 # Viewer contract 1
 
+This reference is for payload producers and renderer maintainers. For installation
+and a first rendered page, start with the [package guide](../README.md). The
+[browser reference](../viewer/README.md) describes playback controls.
+
+## Versions and payload structure
+
 The Julia service contract is `CONTRACT_VERSION = 1` and can be checked with
 `require_version(1)`. `CompatibilityError` reports an unsupported service,
 viewer-payload or scene version before rendering starts.
@@ -24,6 +30,8 @@ matching repeated scene geometry. Encoded NaN gaps for unavailable sample times
 are preserved. Zero-row payloads remain accepted; they contain no trajectory to
 play back.
 
+## Units and coordinate conventions
+
 Optional velocities are kilometres per second. Attitude quaternions use
 scalar-last order `[qx, qy, qz, qw]`. In SpaceAGORA, the coordinate conversion is
 `v_body = rot(q) * v_inertial`. Three.js applies the same stored quaternion to a
@@ -37,6 +45,8 @@ carries their frame and column metadata.
 The renderer preserves these conventions and all supplied values. It does not
 regenerate ephemerides, reinterpret units or certify the underlying physics.
 Missing data and display-only overlays keep the inherited renderer behavior.
+
+## Package boundary and rendering API
 
 Core owns simulation configuration, scene production and dataframe-to-payload
 conversion. This companion owns renderer assets and HTML assembly. The boundary
