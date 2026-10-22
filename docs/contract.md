@@ -115,15 +115,24 @@ transmitter.
 `count`, `index` (0-based positions in `links`), and `start_s` and `end_s`
 (Float64 blocks or numeric arrays, elapsed seconds on the clock of
 `frames.t_s`). `interlinks.contact` has the same form for the spans over which a
-link was available, or is null when the run did not record them. A link is
-drawn at playback time `t` when `start_s <= t < end_s`, and at `t == end_s` when
-that is the schedule's last time; contact-only spans are drawn dimmed. Each link
-joins its two spacecraft's interpolated positions; terminal mounting points are
-not drawn.
+link was available, possibly none, or is null when the run did not record them.
+
+`interlinks.history_start_s` and `interlinks.history_end_s` (numbers, or null or
+absent when unknown) give the span the schedule covers. No link is known before
+the start, which is later than the frames' start only after a resume that could
+not keep the earlier schedule. The renderer says so beside the toggle.
+
+A link is drawn at playback time `t` when `start_s <= t < end_s`, and at
+`t == end_s` when that is `history_end_s` (for a payload without it, the latest
+window end); contact-only spans are drawn dimmed. Each link joins its two
+spacecraft's interpolated positions; terminal mounting points are not drawn.
+Beside the toggle, a coloured square per link kind and the number of links active
+at the playback time form the legend.
 
 The renderer checks the block's structure (version, spacecraft numbers within
 `frames.sats`, positions within `links`, equal-length blocks, finite times with
-`start_s <= end_s`) without changing it. The block is an optional addition to
+`start_s <= end_s`, a finite span with its start not after its end) without
+changing it. The block is an optional addition to
 viewer schema 1 and service contract 1: historical payloads remain valid, and
 older renderers ignore it. SpaceAGORA writes it from the run's link schedule and
 counts it in the exporter's data budget.

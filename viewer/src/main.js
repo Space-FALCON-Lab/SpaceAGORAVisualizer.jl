@@ -252,6 +252,7 @@ export function start(payload, container = document.body) {
       ...(atmosphere.info.map ? { 'density map': `${atmosphere.info.map.altitude_km.toFixed(0)} km, ${atmosphere.info.map.min.toExponential(1)}–${atmosphere.info.map.max.toExponential(1)} kg/m³` } : {}),
     } : {}),
   }, mission);
+  if (links.count) ui.setLinksKey(links.kinds);
   // Default trail coloring: heat rate when the run has it, else age.
   const initialColor = options.trail_color && TRAIL_COLOR_MODES[options.trail_color] ? options.trail_color : (frames.hasScalar('heat_rate') ? 'heat_rate' : 'age');
   ui.setTrailLegend(craft.setTrailColorMode(initialColor));
@@ -587,7 +588,7 @@ export function start(payload, container = document.body) {
     plumes.update(t);
     groundTracks.update(t);
     if (refPaths.items.length) refPaths.update(t, anchor);
-    if (links.count) links.update(t, anchor);
+    if (links.count) { links.update(t, anchor); ui.setLinksStatus(links.statusAt(t)); }
     if (refs.items.length) refs.update(t, camera, viewportHeight, refs.group.matrixWorld, anchor);
     if (ensemble) ensemble.update(state.follow, t, anchor, camera, ensemble.group.matrixWorld);
     craft.update(t, camera, lod.markerHidden, state.selected, craft.group.matrixWorld, anchor, ensemble ? ensemble.dimMask : null);

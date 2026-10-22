@@ -93,6 +93,28 @@ test('segments join the spacecraft while active, dimmed while only in contact', 
   assert.equal(links.group.visible, false);
 });
 
+test('the history span sets the last time and the legend', () => {
+  // Without a span (an older payload), the last time is the latest window end.
+  const plain = createLinks(payload.interlinks, frames, {});
+  assert.equal(plain.historyStart, null);
+  assert.equal(plain.statusAt(7), '1 of 2 active');
+  assert.deepEqual(plain.kinds, [['LaserMomentumLink', linkColor('LaserMomentumLink')],
+    ['DataLink{FixedRateBudget}', linkColor('DataLink')]]);
+  // A history that ran past the last window: a window ending at 10 s is not
+  // drawn at 10 s, since the link was off by then.
+  const later = createLinks({ ...payload.interlinks, history_start_s: 0, history_end_s: 12 }, frames, {});
+  assert.equal(later.lastTime, 12);
+  assert.equal(later.activeAt(1, 10), false);
+  assert.equal(later.update(10, [0, 0, 0]), 0);
+  assert.equal(later.statusAt(10), '0 of 2 active');
+  // A schedule that starts after the frames (a resume that could not keep it).
+  const resumed = createLinks({ ...payload.interlinks, history_start_s: 3, history_end_s: 10 }, frames, {});
+  assert.equal(resumed.statusAt(2), 'not recorded before 3 s');
+  assert.equal(resumed.statusAt(3), '1 of 2 active');
+  // null, as SpaceAGORA writes an unknown span, falls back.
+  assert.equal(createLinks({ ...payload.interlinks, history_start_s: null, history_end_s: null }, frames, {}).lastTime, 10);
+});
+
 test('without the block nothing is drawn', () => {
   const links = createLinks(undefined, frames, {});
   assert.equal(links.count, 0);

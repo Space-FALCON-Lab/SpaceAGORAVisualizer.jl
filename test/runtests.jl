@@ -291,4 +291,17 @@ end
     end
     q = linked(); q["interlinks"]["contact"] = nothing
     @test V.validate_payload(q) === q
+    # The span the schedule covers is optional, null or a finite pair in order.
+    q = linked(); q["interlinks"]["history_start_s"] = 0.0; q["interlinks"]["history_end_s"] = 10.0
+    @test V.validate_payload(q) === q
+    q = linked(); q["interlinks"]["history_start_s"] = nothing; q["interlinks"]["history_end_s"] = nothing
+    @test V.validate_payload(q) === q
+    for (start, stop) in ((5.0, 1.0), ("0", 10.0), (NaN, 10.0), (true, 10.0))
+        q = linked(); q["interlinks"]["history_start_s"] = start; q["interlinks"]["history_end_s"] = stop
+        @test_throws ArgumentError V.validate_payload(q)
+    end
+    # A window block of the wrong length names its own count.
+    q = linked(); q["interlinks"]["active"]["start_s"] = "AAAAAAAAAAA="
+    err = try V.validate_payload(q); nothing catch e; e end
+    @test err isa ArgumentError && occursin("must hold 2 Float64 values", sprint(showerror, err))
 end

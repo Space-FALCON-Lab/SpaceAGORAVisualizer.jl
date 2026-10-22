@@ -155,7 +155,7 @@ export function createUI(container, timeline, state, info, mission = null) {
       <span class="sa-trail-legend" data-role="trail-legend" hidden><span data-role="legend-lo"></span><span class="sa-bar-inferno"></span><span data-role="legend-hi"></span></span>
       <label><input type="checkbox" data-role="labels" checked> labels</label>
       <label data-role="paths-label"><input type="checkbox" data-role="paths" checked> planned paths</label>
-      <label data-role="links-label"><input type="checkbox" data-role="links" checked> interlinks</label>
+      <label data-role="links-label"><input type="checkbox" data-role="links" checked> interlinks <span data-role="links-key"></span> <span data-role="links-status"></span></label>
       <label data-role="references-label"><input type="checkbox" data-role="references" checked> reference ghosts</label>
       <label><input type="checkbox" data-role="groundtracks"> ground tracks</label>
       <label><input type="checkbox" data-role="grid" checked> graticule</label>
@@ -379,7 +379,24 @@ export function createUI(container, timeline, state, info, mission = null) {
 
   timeline.onChange(render);
   render();
-  return { render, setSelection, setFace, setPlotted, setTrailLegend, setHeatLegend, setLightingModes, setLightingStatus, infoBox, selectBox, faceBox, root: ui };
+  // The interlinks legend: a coloured square per link kind (its name on hover),
+  // and the active count, set by the frame loop.
+  function setLinksKey(kinds) {
+    const key = q('links-key');
+    key.replaceChildren(...kinds.map(([kind, color]) => {
+      const swatch = document.createElement('span');
+      swatch.textContent = '\u25A0';
+      swatch.title = kind;
+      swatch.style.color = color;
+      return swatch;
+    }));
+  }
+  function setLinksStatus(text) {
+    const status = q('links-status');
+    if (status.textContent !== text) status.textContent = text;
+  }
+
+  return { render, setSelection, setFace, setPlotted, setTrailLegend, setHeatLegend, setLightingModes, setLightingStatus, setLinksKey, setLinksStatus, infoBox, selectBox, faceBox, root: ui };
 }
 
 // Approved primary Space-FALCON Lab logo B (1221 × 1288), embedded unchanged for offline pages.

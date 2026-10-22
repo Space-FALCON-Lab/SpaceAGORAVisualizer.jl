@@ -2,7 +2,10 @@
 // each link is a segment between its two spacecraft's interpolated positions,
 // drawn while the link is active and, dimmed, while it is only in contact (could
 // close). A directed link fades from its transmitter to its receiver. Without
-// the block nothing is drawn.
+// the block nothing is drawn. The block's `history_start_s` and `history_end_s`
+// give the span its schedule covers: no link is known before the start (after
+// a resume that could not keep the earlier schedule), and a window is drawn at
+// its end only when that end is the history's last time.
 import * as THREE from 'three';
 import { decodeFloatBlock } from 'viewer/data.js';
 
@@ -57,8 +60,15 @@ export function createLinks(spec, frames, options = {}) {
   const count = links.length;
   const active = linkWindows(spec && spec.active, count);
   const contact = linkWindows(spec && spec.contact, count);
-  let lastTime = -Infinity;
-  for (const lists of [active, contact]) for (const list of lists) for (const [, end] of list) lastTime = Math.max(lastTime, end);
+  // The history's span; older payloads give none, and the last time is then the
+  // latest window end.
+  const historyStart = Number.isFinite(spec && spec.history_start_s) ? spec.history_start_s : null;
+  let lastTime = Number.isFinite(spec && spec.history_end_s) ? spec.history_end_s : -Infinity;
+  if (!Number.isFinite(spec && spec.history_end_s)) {
+    for (const lists of [active, contact]) for (const list of lists) for (const [, end] of list) lastTime = Math.max(lastTime, end);
+  }
+  // Each kind present, once, with its colour, for the legend.
+  const kinds = [...new Set(links.map((link) => String(link.kind)))].map((kind) => [kind, linkColor(kind)]);
   const activeLine = segments(count, options.opacity ?? 0.95);
   const contactLine = segments(count, options.contactOpacity ?? CONTACT_OPACITY);
   group.add(contactLine, activeLine);
@@ -81,6 +91,16 @@ export function createLinks(spec, frames, options = {}) {
     links,
     count,
     lastTime,
+    historyStart,
+    kinds,
+    // The legend's text at time `t`: the active count, or, before the history's
+    // start, that no link is known yet.
+    statusAt(t) {
+      if (historyStart !== null && t < historyStart) return `not recorded before ${historyStart} s`;
+      let n = 0;
+      for (let i = 0; i < count; i++) if (inWindow(active[i], t, lastTime)) n++;
+      return `${n} of ${count} active`;
+    },
     // Whether link `i` is active, or only in contact, at time `t`.
     activeAt: (i, t) => inWindow(active[i], t, lastTime),
     contactAt: (i, t) => !inWindow(active[i], t, lastTime) && inWindow(contact[i], t, lastTime),

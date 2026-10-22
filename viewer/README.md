@@ -183,10 +183,13 @@ image, and the info panel shows the tier and the GPU limit.
 its links, with kind, direction and the two spacecraft, and the windows over
 which each was active and, when recorded, in contact, as elapsed seconds on the
 clock of `frames.t_s`. Each link is drawn as a segment between its spacecraft's
-interpolated positions while active (`start_s <= t < end_s`, and at the schedule's
-last time), and dimmed while only in contact; a directed link fades from its
-transmitter to its receiver. The colour follows the kind: laser momentum, power
-beam, data link, or any other. The `interlinks` toggle hides them.
+interpolated positions while active (`start_s <= t < end_s`, and at the
+history's last time, `history_end_s`), and dimmed while only in contact; a
+directed link fades from its transmitter to its receiver. The colour follows the
+kind: laser momentum, power beam, data link, or any other. The `interlinks`
+toggle hides them. Beside it, the legend shows a square of each kind's colour
+(its name on hover) and how many links are active at the playback time, or,
+before `history_start_s`, that no link is recorded yet.
 
 ## Planned paths
 

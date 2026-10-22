@@ -127,6 +127,7 @@ interpolates the displayed trajectory; it does not rerun segment transitions.
 | Renderer service, viewer payload and scene | Version 1; unknown explicit versions are rejected |
 | Historical payloads | Accepted without `viewer_schema` when `scene.schema` is 1 |
 | Recorded mission history | Optional schema 1; older payloads remain usable |
+| Interlinks block | Optional schema 1; older payloads remain usable |
 | Parent used for the linked mission recipe | [SpaceAGORA `388b8801`](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/commit/388b8801b3e912c264b04a462b019acbaf1c0d1a) |
 | Companion selected by that parent's installer | [`6c008074`](https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl/commit/6c0080743c124e321d538f3780fa30868612da21) |
 

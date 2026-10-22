@@ -6,13 +6,13 @@
       "path": "viewer/src/main.js",
       "previous_sha256": "cb0eec06f90a4b2d9582440ea6bb67ccae098f67ec088c46b20a00d52852e293",
       "previous_git_blob": "50f5a6ad6d5d35d556804b93b6f039fb29491b80",
-      "sha256": "ec5396135424bef793aa7033a14ace065eeb90f6892aa17209d6fcbf118a0e23"
+      "sha256": "1bb7625e0a93d0702d57364d50025af717878c1fe87b4fe4a1b149a7546baaa6"
     },
     {
       "path": "viewer/src/ui.js",
       "previous_sha256": "33615deb83e4edd5c25114282f73c4d7d0651581886ff1e912dfbbba73093c65",
       "previous_git_blob": "b0f132bf07e3d1ccaa2a8c0dc6c73b166203b191",
-      "sha256": "eb4983c512079c0a4c55fd5097778c97296133e588fcec91264d82ecfddf38a0"
+      "sha256": "91aa48c4ea09b12ab85e624ffa98d1ff7939caaae882e44c40e229eae536e3cc"
     },
     {
       "path": "viewer/dev.html",
@@ -24,7 +24,7 @@
   "added": [
     {
       "path": "viewer/src/links.js",
-      "sha256": "cec813f7450d52e1a12f5468e51fc8bbc9c8d3feab2b7205d200be99f9409232"
+      "sha256": "776eae869688c0fb339c2dbdbd7d0d589a0faaefc151b83deb67c632fe707a5d"
     }
   ]
 }

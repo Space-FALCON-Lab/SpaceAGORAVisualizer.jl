@@ -71,8 +71,17 @@ end
 
 # A float block's values: base64 little-endian Float64, or a numeric array.
 function _float64_values(value, expected::Int, name::String)::Vector{Float64}
+    if value isa AbstractString
+        bytes = try
+            base64decode(value)
+        catch
+            throw(ArgumentError("$name must be a valid base64 float block."))
+        end
+        length(bytes) == 8 * expected ||
+            throw(ArgumentError("$name must hold $expected Float64 values, its block's count; it holds $(length(bytes) / 8)."))
+        return collect(reinterpret(Float64, bytes))
+    end
     _block_length(value, "f64", expected, name)
-    value isa AbstractString && return collect(reinterpret(Float64, base64decode(value)))
     return Float64[Float64(x) for x in value]
 end
 
@@ -113,6 +122,14 @@ function _validated_interlinks(block, sats::Int)
         all(isfinite, starts) && all(isfinite, ends) && all(starts .<= ends) ||
             throw(ArgumentError("interlinks.$name windows must have finite times with start_s <= end_s."))
     end
+    # The span the schedule covers, when the block gives it.
+    span = map(key -> get(block, key, nothing), ("history_start_s", "history_end_s"))
+    for (key, value) in zip(("history_start_s", "history_end_s"), span)
+        value === nothing || value isa Real && !(value isa Bool) && isfinite(value) ||
+            throw(ArgumentError("interlinks.$key must be a finite number or null."))
+    end
+    any(isnothing, span) || span[1] <= span[2] ||
+        throw(ArgumentError("interlinks.history_start_s must not be after history_end_s."))
     return block
 end
 
