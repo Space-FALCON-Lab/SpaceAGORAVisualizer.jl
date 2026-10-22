@@ -170,6 +170,7 @@ From the repository root, the existing checks are:
 ```sh
 julia --project=. -e 'using Pkg; Pkg.test()'
 node test/unit/visualization/viewer_channels_models_tests.mjs
+node test/unit/visualization/viewer_links_tests.mjs
 python3 -m unittest discover -s test/scripts -p 'test_*.py' -v
 ```
 

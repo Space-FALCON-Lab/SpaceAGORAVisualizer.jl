@@ -11,6 +11,7 @@ import { createPlumes } from 'viewer/plumes.js';
 import { createEnsemble } from 'viewer/ensemble.js';
 import { createAtmosphere } from 'viewer/atmosphere.js';
 import { createPaths } from 'viewer/paths.js';
+import { createLinks } from 'viewer/links.js';
 import { createReferences } from 'viewer/references.js';
 import { createGroundTracks } from 'viewer/groundtrack.js';
 import { TRAIL_COLOR_MODES } from 'viewer/spacecraft.js';
@@ -100,6 +101,10 @@ export function start(payload, container = document.body) {
   const refPaths = createPaths(pathSpecs, frames, {});
   if (refPaths.items.length) world.add(refPaths.group);
 
+  // Interlinks between spacecraft, drawn while each is active (optional block).
+  const links = createLinks(payload.interlinks, frames, {});
+  if (links.count) world.add(links.group);
+
   // Reference ghosts (SPICE reconstructions, telemetry, plans) beside the flown spacecraft.
   const refs = createReferences(referenceSpecs, sidecar, frames, models, {});
   if (refs.items.length) world.add(refs.group);
@@ -124,7 +129,7 @@ export function start(payload, container = document.body) {
   // to three-gpu-pathtracer once the timeline and the camera are still.
   const lighting = createLighting(scene, renderer, frames, planet, {
     camera, world, globe, terrain, lod,
-    helpers: [craft.group, atmosphere && atmosphere.group, refPaths.group, refs.group, ensemble && ensemble.group],
+    helpers: [craft.group, atmosphere && atmosphere.group, refPaths.group, links.group, refs.group, ensemble && ensemble.group],
   });
 
   const period = estimateOrbitPeriod(frames, 0);
@@ -143,6 +148,8 @@ export function start(payload, container = document.body) {
     hasAtmosphere: !!atmosphere,
     hasPaths: refPaths.items.length > 0,
     setPaths(v) { refPaths.setVisible(v); },
+    hasLinks: links.count > 0,
+    setLinks(v) { links.setVisible(v); },
     hasReferences: refs.items.length > 0,
     setReferences(v) { refs.setVisible(v); },
     groundTracks: groundTracks.visible,
@@ -236,6 +243,7 @@ export function start(payload, container = document.body) {
     ...(mission ? { mission: mission.name } : {}),
     ...(ensemble ? { samples: `${ensembleSpec.count} × ${ensemble.perSample} spacecraft` } : {}),
     ...(refPaths.items.length ? { paths: refPaths.items.map((it) => it.spec.name).join(', ') } : {}),
+    ...(links.count ? { interlinks: `${links.count} link${links.count === 1 ? '' : 's'}` } : {}),
     ...(refs.items.length ? { references: refs.items.map((it) => it.spec.name).join(', ') } : {}),
     ...(terrain.levels.length ? { terrain: `${terrain.site ? terrain.site.name + ', ' : ''}${terrain.modelStatus}` } : {}),
     ...(terrain.levels.length && terrain.attribution ? { imagery: terrain.attribution } : {}),
@@ -579,6 +587,7 @@ export function start(payload, container = document.body) {
     plumes.update(t);
     groundTracks.update(t);
     if (refPaths.items.length) refPaths.update(t, anchor);
+    if (links.count) links.update(t, anchor);
     if (refs.items.length) refs.update(t, camera, viewportHeight, refs.group.matrixWorld, anchor);
     if (ensemble) ensemble.update(state.follow, t, anchor, camera, ensemble.group.matrixWorld);
     craft.update(t, camera, lod.markerHidden, state.selected, craft.group.matrixWorld, anchor, ensemble ? ensemble.dimMask : null);
@@ -594,7 +603,7 @@ export function start(payload, container = document.body) {
   requestAnimationFrame(animate);
 
   const viewer = {
-    renderer, scene, camera, controls, world, globe, atmosphere, craft, lod, plumes, dust, ensemble, references: refs, paths: refPaths, groundTracks, timeline, frames, state, period, lighting, mission,
+    renderer, scene, camera, controls, world, globe, atmosphere, craft, lod, plumes, dust, ensemble, references: refs, paths: refPaths, links, groundTracks, timeline, frames, state, period, lighting, mission,
     // Deterministic rendering for exports: seek and draw one frame at t.
     renderAt(t) { timeline.seek(t); frame(t); },
     setRecording(v) { recording = v; if (!v) resize(); },

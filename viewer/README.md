@@ -45,6 +45,7 @@ scientific frame metadata belongs to core's export step.
 | `src/lod.js` | close-up box assemblies, thruster/facet glyphs, STL override, visibility by projected size |
 | `src/ensemble.js` | ensemble coloring, spaghetti histories, sample selector |
 | `src/paths.js` | reference polylines in inertial, RTN or body frames |
+| `src/links.js` | interlinks: a segment between two spacecraft while their link is active, dimmed while it is only in contact |
 | `src/references.js` | reference ghosts: translucent copies of a spacecraft driven by an external state table |
 | `src/groundtrack.js` | ground tracks: the sub-satellite point of every spacecraft drawn on the body's surface, built once in the body-fixed frame and parented to the globe so it is correct in both viewer frames |
 | `src/video.js` | MP4 export through WebCodecs and mp4-muxer (`vendor/mp4-muxer.mjs`, MIT), WebM fallback |
@@ -175,6 +176,17 @@ to `--textures none`; pass `--textures-dir=/path/to/textures` and
 `--textures 4k` or `--textures 8k` to use an existing catalog. Higher tiers increase HTML and decoded image size. The globe
 downscales on load when the GPU's maximum texture size is smaller than the
 image, and the info panel shows the tier and the GPU limit.
+
+## Interlinks
+
+`payload.interlinks` (optional) carries a run's link schedule (`src/links.js`):
+its links, with kind, direction and the two spacecraft, and the windows over
+which each was active and, when recorded, in contact, as elapsed seconds on the
+clock of `frames.t_s`. Each link is drawn as a segment between its spacecraft's
+interpolated positions while active (`start_s <= t < end_s`, and at the schedule's
+last time), and dimmed while only in contact; a directed link fades from its
+transmitter to its receiver. The colour follows the kind: laser momentum, power
+beam, data link, or any other. The `interlinks` toggle hides them.
 
 ## Planned paths
 

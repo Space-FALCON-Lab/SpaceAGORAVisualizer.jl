@@ -155,6 +155,7 @@ export function createUI(container, timeline, state, info, mission = null) {
       <span class="sa-trail-legend" data-role="trail-legend" hidden><span data-role="legend-lo"></span><span class="sa-bar-inferno"></span><span data-role="legend-hi"></span></span>
       <label><input type="checkbox" data-role="labels" checked> labels</label>
       <label data-role="paths-label"><input type="checkbox" data-role="paths" checked> planned paths</label>
+      <label data-role="links-label"><input type="checkbox" data-role="links" checked> interlinks</label>
       <label data-role="references-label"><input type="checkbox" data-role="references" checked> reference ghosts</label>
       <label><input type="checkbox" data-role="groundtracks"> ground tracks</label>
       <label><input type="checkbox" data-role="grid" checked> graticule</label>
@@ -261,6 +262,8 @@ export function createUI(container, timeline, state, info, mission = null) {
   q('labels').addEventListener('change', (e) => state.setLabels(e.target.checked));
   q('paths-label').hidden = !state.hasPaths;
   q('paths').addEventListener('change', (e) => state.setPaths(e.target.checked));
+  q('links-label').hidden = !state.hasLinks;
+  q('links').addEventListener('change', (e) => state.setLinks(e.target.checked));
   q('references-label').hidden = !state.hasReferences;
   q('references').addEventListener('change', (e) => state.setReferences(e.target.checked));
   const groundTracks = q('groundtracks');

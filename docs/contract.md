@@ -7,7 +7,7 @@ viewer-payload or scene version before rendering starts.
 New portable payloads declare `viewer_schema: 1`. They contain `scene`, `frames`
 and optional `textures`, `models`, `paths`, `references`, `terrain`, `ensemble`
 and `options` objects. An optional `mission` object carries recorded execution
-history. Historical payloads without `viewer_schema` are accepted
+history, and an optional `interlinks` object a run's link schedule. Historical payloads without `viewer_schema` are accepted
 as version 1 only if `scene.schema` is 1. Unknown explicit versions are refused.
 The current renderer and scene contract remain version 1; package version
 `0.1.0` is a separate release identifier.
@@ -101,3 +101,29 @@ adding a general tolerance or extending trajectory coverage. Float64 times,
 unsaved boundary times and invalid grids retain strict comparisons. If several
 mission boundaries encode to one saved instant, the incoming segment is shown,
 with the last segment taking precedence at the terminal instant.
+
+## Interlinks
+
+`interlinks.schema` is 1. `interlinks.links` lists the links that appear in a
+run's link schedule: each has `link` (its number in the run), `kind` (the link
+kind's type name, for example `LaserMomentumLink` or `DataLink{ShannonBudget}`),
+`directed`, and the spacecraft `a` and `b` (numbered from 1, as
+`paths[].target`) with their terminals. For a directed link `a` is the
+transmitter.
+
+`interlinks.active` holds the spans over which each link was selected:
+`count`, `index` (0-based positions in `links`), and `start_s` and `end_s`
+(Float64 blocks or numeric arrays, elapsed seconds on the clock of
+`frames.t_s`). `interlinks.contact` has the same form for the spans over which a
+link was available, or is null when the run did not record them. A link is
+drawn at playback time `t` when `start_s <= t < end_s`, and at `t == end_s` when
+that is the schedule's last time; contact-only spans are drawn dimmed. Each link
+joins its two spacecraft's interpolated positions; terminal mounting points are
+not drawn.
+
+The renderer checks the block's structure (version, spacecraft numbers within
+`frames.sats`, positions within `links`, equal-length blocks, finite times with
+`start_s <= end_s`) without changing it. The block is an optional addition to
+viewer schema 1 and service contract 1: historical payloads remain valid, and
+older renderers ignore it. SpaceAGORA writes it from the run's link schedule and
+counts it in the exporter's data budget.

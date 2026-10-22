@@ -85,8 +85,23 @@ end
         @test change["previous_sha256"] == pinned(previous)
         @test change["sha256"] != change["previous_sha256"]
     end
+    directed(entry) = get(direction_hashes, entry["path"], pinned(entry))
+    # The interlink-links record changes files the records above pin, each from
+    # the hash they give, and adds the links module, pinned by its own hash.
+    interlinks = JSON.parsefile(joinpath(ROOT, "provenance", "interlink-links.json"))
+    link_hashes = Dict(item["path"] => item["sha256"] for item in interlinks["files"])
+    @test Set(keys(link_hashes)) == Set(["viewer/src/main.js", "viewer/src/ui.js", "viewer/dev.html"])
+    for change in interlinks["files"]
+        previous = only(filter(entry -> entry["path"] == change["path"], immutable))
+        @test change["previous_sha256"] == directed(previous)
+        @test change["sha256"] != change["previous_sha256"]
+    end
+    for added in interlinks["added"]
+        @test isempty(filter(entry -> entry["path"] == added["path"], immutable))
+        @test bytes2hex(sha256(read(joinpath(ROOT, added["path"])))) == added["sha256"]
+    end
     for entry in immutable
-        expected = get(direction_hashes, entry["path"], pinned(entry))
+        expected = get(link_hashes, entry["path"], directed(entry))
         @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
@@ -248,4 +263,32 @@ end
     embedded = match(r"window\.SPACEAGORA_VIEWER = (.*?);\n</script>"s, html)
     @test JSON.parse(embedded.captures[1]) == before
     @test p == before
+end
+
+@testset "Optional interlinks block" begin
+    linked() = JSON.parsefile(joinpath(@__DIR__, "fixtures", "interlinks_viewer.json"))
+    p = linked()
+    @test V.validate_payload(p) === p
+    @test "links.js" in V.VIEWER_MODULES
+    html = V.render_viewer_html(p; title="links")
+    @test occursin("viewer/links.js", html)
+    @test V.validate_payload(fixture()) isa AbstractDict          # no block: unchanged
+    bad = [
+        q -> (q["interlinks"]["schema"] = 2),
+        q -> (q["interlinks"]["links"][1]["b"] = 4),               # spacecraft outside the scene
+        q -> (q["interlinks"]["links"][1]["a"] = 0),
+        q -> (q["interlinks"]["links"][2]["directed"] = "yes"),
+        q -> (q["interlinks"]["active"]["index"] = [0, 2]),        # no third link
+        q -> (q["interlinks"]["active"]["count"] = 3),
+        q -> (q["interlinks"]["contact"]["end_s"] = [-1.0]),       # end before start
+        q -> (q["interlinks"]["contact"]["start_s"] = [NaN]),
+        q -> delete!(q["interlinks"], "active"),
+        q -> (q["interlinks"] = [1, 2]),
+    ]
+    for change! in bad
+        q = linked(); change!(q)
+        @test_throws Union{ArgumentError, V.CompatibilityError} V.validate_payload(q)
+    end
+    q = linked(); q["interlinks"]["contact"] = nothing
+    @test V.validate_payload(q) === q
 end
