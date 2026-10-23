@@ -15,7 +15,15 @@ This renderer now belongs to SpaceAGORAVisualizer.jl. See the package
 installation and file inputs. The original design record is retained in
 [SpaceAGORA](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/265c9c6bd002d31aba77f4bb7cc46b48b48b98ed/docs/architecture/interactive_visualization_plan.md).
 
+Use the [controls](#controls) and [display features](#close-up-models) when
+viewing a page. For renderer changes, see [development](#developing-the-viewer)
+and the [module layout](#layout). Export functions mentioned below belong to
+SpaceAGORA; they prepare the data this package displays.
+
 ## Producing a page
+
+In the Julia environment where you installed SpaceAGORAVisualizer, pass the
+path to an exported payload:
 
 ```julia
 using SpaceAGORAVisualizer
@@ -71,13 +79,42 @@ file and to local paths in `dev.html`. No build tool is involved.
 
 ## Developing the viewer
 
-1. Produce `viewer/dev_data.js` with the core integration's
-   `write_viewer_dev_payload("output/simulation_results", "viewer/dev_data.js")`,
-   or build a standalone CSV/JSON form with `build_standalone.py`.
-2. Serve this directory: `python3 -m http.server 8000` from `viewer/`.
-3. Open `http://localhost:8000/dev.html`, edit files under `src/`, reload.
+The live development page loads local modules and a `viewer/dev_data.js`
+payload. You need Python 3, a checkout of this repository, and a Julia environment
+with SpaceAGORA installed. Keep a completed run's scene sidecar and the Arrow
+results bundle it names together. In that Julia environment, replace these
+absolute paths with your run prefix and viewer checkout:
 
+```julia
+using SpaceAGORA
+SpaceAGORA.write_viewer_dev_payload(
+    "/absolute/path/to/run/simulation_results",
+    "/absolute/path/to/SpaceAGORAVisualizer.jl/viewer/dev_data.js";
+    textures=false)
+```
+
+This reads the completed run and creates `dev_data.js`; it does not run a new
+simulation. `textures=false` omits planetary textures from this development
+payload. From the root of the SpaceAGORAVisualizer.jl checkout, serve the viewer:
+
+```sh
+python3 -m http.server 8000 --directory viewer
+```
+
+Open `http://localhost:8000/dev.html`, edit files under `viewer/src/`, and reload.
+The development page may load its optional lighting libraries from the CDN;
+the offline guarantees for exported pages do not apply to this harness.
 `dev_data.js` is ignored by git.
+
+For a CSV/JSON import form instead, run the following from the same repository
+root and open `viewer.html` directly:
+
+```sh
+python3 viewer/build_standalone.py --textures none --out viewer.html
+```
+
+That command creates a separate bundled page, not `dev_data.js`. Rebuild it after
+editing renderer modules. It needs neither a completed SpaceAGORA run nor Julia.
 
 ## Controls
 
@@ -226,11 +263,15 @@ is read in W/cm², the unit SpaceAGORA saves, and stored as W/m² in
 
 ## External-host page
 
-```text
+From the repository root, use Python 3 to convert an existing exported page.
+Replace the input and output paths and the page labels for your run:
+
+```sh
 python3 viewer/build_cdn_page.py output/simulation_results_viewer.html output/artifact.html "Title" "Heading" "Orbit note" "Span note" "Footer text"
 ```
 
-The default exported page is fully self-contained. Some hosts refuse `data:`
+The default exported page embeds its renderer and supplied data; external model
+resources keep their original URLs. Some hosts refuse `data:`
 script URLs, so `build_cdn_page.py` rewrites an exported page into a variant
 that fetches the pinned three.js r160, its loaders and mp4-muxer 5.1.5 from
 `cdn.jsdelivr.net` (the same pinned map as `build_standalone.py --cdn`) and

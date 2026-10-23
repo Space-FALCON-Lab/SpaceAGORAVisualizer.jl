@@ -25,6 +25,10 @@ Pkg.activate("viewer-env")
 Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git")
 ```
 
+The environment is created as `viewer-env` in Julia's current directory.
+Continue with the first example in the same session. In a later session, start
+Julia with `julia --project=/absolute/path/to/viewer-env`.
+
 This installs the repository's default branch. The package is an unregistered
 0.1.0 development version, with no tagged release yet. For a local checkout,
 replace `Pkg.add` with `Pkg.develop(path="/absolute/path/to/SpaceAGORAVisualizer.jl")`.
@@ -139,8 +143,9 @@ HTML as a string.
 
 ## Other trajectory files
 
-From a checkout of this repository, you can build a browser form that accepts
-CSV or JSON trajectory tables without Julia:
+With Python 3 installed, run this command from the root of a checkout of
+SpaceAGORAVisualizer.jl to build a browser form that accepts CSV or JSON
+trajectory tables without Julia:
 
 ```sh
 python3 viewer/build_standalone.py --textures none --out viewer.html
@@ -166,17 +171,27 @@ dynamic-pressure overlays are illustrative; use the simulation's verified
 outputs for scientific conclusions. The browser needs WebGL, and video export
 also depends on the codecs available in that browser.
 
-From the repository root, the existing checks are:
+To contribute a renderer change, use a checkout of this repository. The
+[development guide](viewer/README.md#developing-the-viewer) explains how to reload
+local renderer modules; the [payload contract](docs/contract.md) defines the
+input format. Add a small regression case for a changed behavior and keep
+scientific-data provenance and third-party notices intact.
+
+The checks below run from the repository root. They require Julia 1.12, Node.js
+and Python 3. The Node suite uses standard-library test tools and the vendored
+renderer libraries; the Python suite uses the standard library. The first
+command installs the Julia dependencies before running the Julia tests:
 
 ```sh
-julia --project=. -e 'using Pkg; Pkg.test()'
+julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 node test/unit/visualization/viewer_channels_models_tests.mjs
 node test/unit/visualization/viewer_links_tests.mjs
 python3 -m unittest discover -s test/scripts -p 'test_*.py' -v
 ```
 
 The Node suite checks renderer modules without WebGL. An optional browser smoke
-check uses an already installed Playwright and Chrome or Chromium:
+check uses an already installed Playwright package, resolvable by Node from
+this checkout, and Chrome or Chromium. It does not install either tool:
 
 ```sh
 julia --project=. -e 'using SpaceAGORAVisualizer; visualize("test/fixtures/small_viewer.json"; out="/tmp/spaceagora-viewer-test.html")'
