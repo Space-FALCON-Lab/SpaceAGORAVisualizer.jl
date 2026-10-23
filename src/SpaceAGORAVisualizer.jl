@@ -69,6 +69,86 @@ function _block_length(value, dtype::String, expected::Int, name::String)
     return nothing
 end
 
+# A float block's values: base64 little-endian Float64, or a numeric array.
+function _float64_values(value, expected::Int, name::String)::Vector{Float64}
+    if value isa AbstractString
+        bytes = try
+            base64decode(value)
+        catch
+            throw(ArgumentError("$name must be a valid base64 float block."))
+        end
+        length(bytes) == 8 * expected ||
+            throw(ArgumentError("$name must hold $expected Float64 values, its block's count; it holds $(length(bytes) / 8)."))
+        return collect(reinterpret(Float64, bytes))
+    end
+    _block_length(value, "f64", expected, name)
+    return Float64[Float64(x) for x in value]
+end
+
+# The optional interlinks block: a run's link schedule as links and the windows
+# over which each was active and, when recorded, in contact. Validate its
+# structure; the windows' times are not resampled or reconciled.
+function _validated_interlinks(block, sats::Int)
+    block === nothing && return nothing
+    block isa AbstractDict || throw(ArgumentError("interlinks must be a JSON object."))
+    _require_version("interlinks block", get(block, "schema", nothing), 1)
+    links = _required(block, "links", "interlinks")
+    links isa AbstractVector || throw(ArgumentError("interlinks.links must be an array."))
+    stations = get(block, "stations", [])
+    stations isa AbstractVector || throw(ArgumentError("interlinks.stations must be an array."))
+    nodes = Set{Int}()
+    for station in stations
+        station isa AbstractDict || throw(ArgumentError("interlinks.stations entries must be objects."))
+        node = get(station, "node", nothing)
+        node isa Integer && !(node isa Bool) && node < 0 && !(node in nodes) ||
+            throw(ArgumentError("Station nodes must be unique negative integers."))
+        push!(nodes, node)
+        name = get(station, "name", nothing)
+        name isa AbstractString && !isempty(name) || throw(ArgumentError("A station needs a name."))
+        position = get(station, "position_m", nothing)
+        position isa AbstractVector && length(position) == 3 &&
+            all(x -> x isa Real && !(x isa Bool) && isfinite(x), position) ||
+            throw(ArgumentError("A station needs three finite planet-fixed coordinates in meters."))
+    end
+    for link in links
+        link isa AbstractDict || throw(ArgumentError("interlinks.links entries must be JSON objects."))
+        for key in ("a", "b")
+            value = _required(link, key, "interlinks.links[]")
+            value isa Integer && !(value isa Bool) && (1 <= value <= sats || value in nodes) ||
+                throw(ArgumentError("interlinks.links[].$key must name a spacecraft in 1:$sats or a declared station."))
+        end
+        _required(link, "kind", "interlinks.links[]") isa AbstractString ||
+            throw(ArgumentError("interlinks.links[].kind must be a string."))
+        _required(link, "directed", "interlinks.links[]") isa Bool ||
+            throw(ArgumentError("interlinks.links[].directed must be true or false."))
+    end
+    for name in ("active", "contact")
+        windows = name == "active" ? _required(block, name, "interlinks") : get(block, name, nothing)
+        windows === nothing && continue
+        windows isa AbstractDict || throw(ArgumentError("interlinks.$name must be a JSON object or null."))
+        count = _required(windows, "count", "interlinks.$name")
+        count isa Integer && !(count isa Bool) && count >= 0 ||
+            throw(ArgumentError("interlinks.$name.count must be an integer >= 0."))
+        index = _required(windows, "index", "interlinks.$name")
+        index isa AbstractVector && length(index) == count &&
+            all(i -> i isa Integer && !(i isa Bool) && 0 <= i < length(links), index) ||
+            throw(ArgumentError("interlinks.$name.index must hold $count positions in interlinks.links."))
+        starts = _float64_values(_required(windows, "start_s", "interlinks.$name"), Int(count), "interlinks.$name.start_s")
+        ends = _float64_values(_required(windows, "end_s", "interlinks.$name"), Int(count), "interlinks.$name.end_s")
+        all(isfinite, starts) && all(isfinite, ends) && all(starts .<= ends) ||
+            throw(ArgumentError("interlinks.$name windows must have finite times with start_s <= end_s."))
+    end
+    # The span the schedule covers, when the block gives it.
+    span = map(key -> get(block, key, nothing), ("history_start_s", "history_end_s"))
+    for (key, value) in zip(("history_start_s", "history_end_s"), span)
+        value === nothing || value isa Real && !(value isa Bool) && isfinite(value) ||
+            throw(ArgumentError("interlinks.$key must be a finite number or null."))
+    end
+    any(isnothing, span) || span[1] <= span[2] ||
+        throw(ArgumentError("interlinks.history_start_s must not be after history_end_s."))
+    return block
+end
+
 # Mission history is optional plain data shared with the independent viewer.
 # Validate structure without changing times, names or the underlying results.
 function _validated_mission_history(mission)
@@ -120,7 +200,8 @@ end
 Validate the supported file contract before rendering. New payloads declare
 `viewer_schema = 1`; historical payloads without that field are accepted as
 version 1 only when their `scene.schema` is 1. Time/position block dimensions
-must match the declared frame and spacecraft counts. This function does not
+must match the declared frame and spacecraft counts. The optional `mission` and
+`interlinks` blocks are checked when present. This function does not
 resample, convert, mutate, or scientifically validate the saved results.
 """
 function validate_payload(payload::AbstractDict)
@@ -137,6 +218,7 @@ function validate_payload(payload::AbstractDict)
     _block_length(_required(frames, "t_s", "frames"), String(get(frames, "t_dtype", "f32")), count, "frames.t_s")
     _block_length(_required(frames, "pos_km", "frames"), String(get(frames, "pos_dtype", "f32")), Base.checked_mul(Base.checked_mul(count, sats), 3), "frames.pos_km")
     _validated_mission_history(get(payload, "mission", nothing))
+    _validated_interlinks(get(payload, "interlinks", nothing), sats)
     return payload
 end
 

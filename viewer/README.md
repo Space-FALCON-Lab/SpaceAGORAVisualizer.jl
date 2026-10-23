@@ -53,6 +53,7 @@ scientific frame metadata belongs to core's export step.
 | `src/lod.js` | close-up box assemblies, thruster/facet glyphs, STL override, visibility by projected size |
 | `src/ensemble.js` | ensemble coloring, spaghetti histories, sample selector |
 | `src/paths.js` | reference polylines in inertial, RTN or body frames |
+| `src/links.js` | interlinks and named ground stations: active segments, dim contact segments, and fixed sites rotating with the globe |
 | `src/references.js` | reference ghosts: translucent copies of a spacecraft driven by an external state table |
 | `src/groundtrack.js` | ground tracks: the sub-satellite point of every spacecraft drawn on the body's surface, built once in the body-fixed frame and parented to the globe so it is correct in both viewer frames |
 | `src/video.js` | MP4 export through WebCodecs and mp4-muxer (`vendor/mp4-muxer.mjs`, MIT), WebM fallback |
@@ -212,6 +213,27 @@ to `--textures none`; pass `--textures-dir=/path/to/textures` and
 `--textures 4k` or `--textures 8k` to use an existing catalog. Higher tiers increase HTML and decoded image size. The globe
 downscales on load when the GPU's maximum texture size is smaller than the
 image, and the info panel shows the tier and the GPU limit.
+
+## Interlinks
+
+`payload.interlinks` (optional) carries a run's link schedule (`src/links.js`):
+its links, with kind, direction and the two spacecraft, and the windows over
+which each was active and, when recorded, in contact, as elapsed seconds on the
+clock of `frames.t_s`. Each link is drawn as a segment between its spacecraft's
+interpolated positions while active (`start_s <= t < end_s`, and at the
+history's last time, `history_end_s`), and dimmed while only in contact; a
+directed link fades from its transmitter to its receiver. The colour follows the
+kind: laser momentum, power beam, data link, or any other. The `interlinks`
+toggle hides them. Beside it, the legend shows a square of each kind's colour
+(its name on hover) and how many links are active at the playback time, or,
+before `history_start_s`, that no link is recorded yet.
+
+An optional `stations` array supplies each station's unique negative `node`,
+`name`, and planet-fixed `position_m` (three finite coordinates in meters).
+Negative link endpoints resolve to those sites. Green markers and labels rotate
+with the globe in inertial and planet-fixed views, including spacecraft-follow
+mode. The labels toggle controls station names; the interlinks toggle controls
+both station markers and link segments. Old payloads need no stations array.
 
 ## Planned paths
 

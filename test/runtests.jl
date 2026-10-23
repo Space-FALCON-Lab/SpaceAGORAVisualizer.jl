@@ -85,8 +85,23 @@ end
         @test change["previous_sha256"] == pinned(previous)
         @test change["sha256"] != change["previous_sha256"]
     end
+    directed(entry) = get(direction_hashes, entry["path"], pinned(entry))
+    # The interlink-links record changes files the records above pin, each from
+    # the hash they give, and adds the links module, pinned by its own hash.
+    interlinks = JSON.parsefile(joinpath(ROOT, "provenance", "interlink-links.json"))
+    link_hashes = Dict(item["path"] => item["sha256"] for item in interlinks["files"])
+    @test Set(keys(link_hashes)) == Set(["viewer/src/main.js", "viewer/src/ui.js", "viewer/dev.html"])
+    for change in interlinks["files"]
+        previous = only(filter(entry -> entry["path"] == change["path"], immutable))
+        @test change["previous_sha256"] == directed(previous)
+        @test change["sha256"] != change["previous_sha256"]
+    end
+    for added in interlinks["added"]
+        @test isempty(filter(entry -> entry["path"] == added["path"], immutable))
+        @test bytes2hex(sha256(read(joinpath(ROOT, added["path"])))) == added["sha256"]
+    end
     for entry in immutable
-        expected = get(direction_hashes, entry["path"], pinned(entry))
+        expected = get(link_hashes, entry["path"], directed(entry))
         @test bytes2hex(sha256(read(joinpath(ROOT, entry["path"])))) == expected
     end
     imports = V.viewer_import_map()["imports"]
@@ -248,4 +263,69 @@ end
     embedded = match(r"window\.SPACEAGORA_VIEWER = (.*?);\n</script>"s, html)
     @test JSON.parse(embedded.captures[1]) == before
     @test p == before
+end
+
+@testset "Optional interlinks block" begin
+    linked() = JSON.parsefile(joinpath(@__DIR__, "fixtures", "interlinks_viewer.json"))
+    p = linked()
+    @test V.validate_payload(p) === p
+    @test "links.js" in V.VIEWER_MODULES
+    html = V.render_viewer_html(p; title="links")
+    @test occursin("viewer/links.js", html)
+    @test V.validate_payload(fixture()) isa AbstractDict          # no block: unchanged
+    bad = [
+        q -> (q["interlinks"]["schema"] = 2),
+        q -> (q["interlinks"]["links"][1]["b"] = 4),               # spacecraft outside the scene
+        q -> (q["interlinks"]["links"][1]["a"] = 0),
+        q -> (q["interlinks"]["links"][2]["directed"] = "yes"),
+        q -> (q["interlinks"]["active"]["index"] = [0, 2]),        # no third link
+        q -> (q["interlinks"]["active"]["count"] = 3),
+        q -> (q["interlinks"]["contact"]["end_s"] = [-1.0]),       # end before start
+        q -> (q["interlinks"]["contact"]["start_s"] = [NaN]),
+        q -> delete!(q["interlinks"], "active"),
+        q -> (q["interlinks"] = [1, 2]),
+    ]
+    for change! in bad
+        q = linked(); change!(q)
+        @test_throws Union{ArgumentError, V.CompatibilityError} V.validate_payload(q)
+    end
+    q = linked(); q["interlinks"]["contact"] = nothing
+    @test V.validate_payload(q) === q
+    # The span the schedule covers is optional, null or a finite pair in order.
+    q = linked(); q["interlinks"]["history_start_s"] = 0.0; q["interlinks"]["history_end_s"] = 10.0
+    @test V.validate_payload(q) === q
+    q = linked(); q["interlinks"]["history_start_s"] = nothing; q["interlinks"]["history_end_s"] = nothing
+    @test V.validate_payload(q) === q
+    for (start, stop) in ((5.0, 1.0), ("0", 10.0), (NaN, 10.0), (true, 10.0))
+        q = linked(); q["interlinks"]["history_start_s"] = start; q["interlinks"]["history_end_s"] = stop
+        @test_throws ArgumentError V.validate_payload(q)
+    end
+    # A window block of the wrong length names its own count.
+    q = linked(); q["interlinks"]["active"]["start_s"] = "AAAAAAAAAAA="
+    err = try V.validate_payload(q); nothing catch e; e end
+    @test err isa ArgumentError && occursin("must hold 2 Float64 values", sprint(showerror, err))
+end
+
+@testset "Ground station viewer endpoints" begin
+    payload = JSON.parsefile(joinpath(@__DIR__, "fixtures", "interlinks_viewer.json"))
+    block = payload["interlinks"]
+    block["stations"] = [Dict("node" => -1, "name" => "Equator station", "position_m" => [6371000.0, 0.0, 0.0])]
+    block["links"][1]["a"] = -1
+    block["links"][2]["b"] = -1
+    @test validate_payload(payload) === payload
+    for mutate! in (
+        p -> (p["interlinks"]["stations"][1]["node"] = 0),
+        p -> (p["interlinks"]["stations"][1]["node"] = true),
+        p -> push!(p["interlinks"]["stations"], deepcopy(p["interlinks"]["stations"][1])),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = [1.0, 2.0]),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = [1.0, Inf, 3.0]),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = Any[1.0, true, 3.0]),
+        p -> (p["interlinks"]["stations"][1]["name"] = ""),
+        p -> (p["interlinks"]["links"][1]["a"] = -2),
+        p -> delete!(p["interlinks"], "stations"),
+    )
+        bad = deepcopy(payload)
+        mutate!(bad)
+        @test_throws ArgumentError validate_payload(bad)
+    end
 end
