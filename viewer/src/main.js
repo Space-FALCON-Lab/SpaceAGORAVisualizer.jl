@@ -102,8 +102,8 @@ export function start(payload, container = document.body) {
   if (refPaths.items.length) world.add(refPaths.group);
 
   // Interlinks between spacecraft, drawn while each is active (optional block).
-  const links = createLinks(payload.interlinks, frames, {});
-  if (links.count) world.add(links.group);
+  const links = createLinks(payload.interlinks, frames, { rotationAt: (t, out) => globe.rotationAt(t, out) });
+  if (links.count || links.stationCount) world.add(links.group);
 
   // Reference ghosts (SPICE reconstructions, telemetry, plans) beside the flown spacecraft.
   const refs = createReferences(referenceSpecs, sidecar, frames, models, {});
@@ -148,7 +148,7 @@ export function start(payload, container = document.body) {
     hasAtmosphere: !!atmosphere,
     hasPaths: refPaths.items.length > 0,
     setPaths(v) { refPaths.setVisible(v); },
-    hasLinks: links.count > 0,
+    hasLinks: links.count > 0 || links.stationCount > 0,
     setLinks(v) { links.setVisible(v); },
     hasReferences: refs.items.length > 0,
     setReferences(v) { refs.setVisible(v); },
@@ -198,7 +198,7 @@ export function start(payload, container = document.body) {
     },
     plotSeries(spec) { plots.toggle(spec); ui.setPlotted(plots.key); },
     setTrailOrbits(n) { state.trailOrbits = n; applyTrail(); },
-    setLabels(v) { craft.setLabelsVisible(v); refs.setLabelsVisible(v); },
+    setLabels(v) { craft.setLabelsVisible(v); refs.setLabelsVisible(v); links.setLabelsVisible(v); },
     setGraticule(v) { globe.grid.visible = v; globe.axis.visible = v; },
     setAssemblies(v) { lod.setEnabled(v); },
     setThrusters(v) { lod.setThrustersVisible(v); },
@@ -588,7 +588,7 @@ export function start(payload, container = document.body) {
     plumes.update(t);
     groundTracks.update(t);
     if (refPaths.items.length) refPaths.update(t, anchor);
-    if (links.count) { links.update(t, anchor); ui.setLinksStatus(links.statusAt(t)); }
+    if (links.count || links.stationCount) { links.update(t, anchor, camera); ui.setLinksStatus(links.statusAt(t)); }
     if (refs.items.length) refs.update(t, camera, viewportHeight, refs.group.matrixWorld, anchor);
     if (ensemble) ensemble.update(state.follow, t, anchor, camera, ensemble.group.matrixWorld);
     craft.update(t, camera, lod.markerHidden, state.selected, craft.group.matrixWorld, anchor, ensemble ? ensemble.dimMask : null);

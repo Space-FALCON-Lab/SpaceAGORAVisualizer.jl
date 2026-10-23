@@ -139,3 +139,41 @@ test('without the block nothing is drawn', () => {
   assert.equal(links.count, 0);
   assert.equal(links.update(5, [0, 0, 0]), 0);
 });
+
+test('station markers and both link directions rotate with the planet and floating origin', () => {
+  const station = { node: -1, name: 'Equator station', position_m: [6371000, 0, 0] };
+  const spec = {
+    ...payload.interlinks,
+    stations: [station],
+    links: [{ ...payload.interlinks.links[0], a: -1, b: 1 }, { ...payload.interlinks.links[1], a: 1, b: -1 }],
+  };
+  const rotationAt = (t, out) => out.set(0, 0, Math.sin(t * Math.PI / 4), Math.cos(t * Math.PI / 4));
+  const links = createLinks(spec, frames, { rotationAt });
+  assert.equal(links.stationCount, 1);
+  const [contactLine, activeLine, markers] = links.group.children;
+  const anchor = [7000, 1200, -20];
+  const sat = new Float64Array(3);
+  for (const t of [0, 1, 2, 3, 7]) {
+    links.update(t, anchor);
+    const site = [6371 * Math.cos(t * Math.PI / 2), 6371 * Math.sin(t * Math.PI / 2), 0];
+    const fixed = site.map((x, k) => x - anchor[k]);
+    frames.positionAt(t, 0, sat);
+    const moving = Array.from(sat, (x, k) => x - anchor[k]);
+    const matches = (actual, expected) => actual.every((x, i) => Math.abs(x - expected[i]) < 0.001);
+    assert.ok(matches(Array.from(markers.geometry.getAttribute('position').array), fixed));
+    if (t < 5) {
+      assert.ok(matches(segment(activeLine, 0), [...fixed, ...moving]));
+      assert.ok(matches(segment(contactLine, 1), [...moving, ...fixed]));
+    } else assert.ok(matches(segment(activeLine, 1), [...moving, ...fixed]));
+    assert.deepEqual(links.group.position.toArray(), anchor);
+  }
+  assert.throws(() => createLinks(spec, frames, {}), /planet rotation/);
+  assert.throws(() => createLinks({ ...spec, stations: [] }, frames, { rotationAt }), /endpoint/);
+  assert.throws(() => createLinks({ ...spec, stations: [station, station] }, frames, { rotationAt }), /unique/);
+  // A station remains visible even if it had no recorded contact window.
+  const idle = createLinks({ ...spec, links: [], active: { count: 0 }, contact: null }, frames, { rotationAt });
+  idle.update(1, [0, 0, 0]);
+  assert.equal(idle.count, 0);
+  assert.equal(idle.stationCount, 1);
+  assert.ok(Math.abs(idle.group.children[2].geometry.getAttribute('position').array[1] - 6371) < 1e-6);
+});

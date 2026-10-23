@@ -305,3 +305,27 @@ end
     err = try V.validate_payload(q); nothing catch e; e end
     @test err isa ArgumentError && occursin("must hold 2 Float64 values", sprint(showerror, err))
 end
+
+@testset "Ground station viewer endpoints" begin
+    payload = JSON.parsefile(joinpath(@__DIR__, "fixtures", "interlinks_viewer.json"))
+    block = payload["interlinks"]
+    block["stations"] = [Dict("node" => -1, "name" => "Equator station", "position_m" => [6371000.0, 0.0, 0.0])]
+    block["links"][1]["a"] = -1
+    block["links"][2]["b"] = -1
+    @test validate_payload(payload) === payload
+    for mutate! in (
+        p -> (p["interlinks"]["stations"][1]["node"] = 0),
+        p -> (p["interlinks"]["stations"][1]["node"] = true),
+        p -> push!(p["interlinks"]["stations"], deepcopy(p["interlinks"]["stations"][1])),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = [1.0, 2.0]),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = [1.0, Inf, 3.0]),
+        p -> (p["interlinks"]["stations"][1]["position_m"] = Any[1.0, true, 3.0]),
+        p -> (p["interlinks"]["stations"][1]["name"] = ""),
+        p -> (p["interlinks"]["links"][1]["a"] = -2),
+        p -> delete!(p["interlinks"], "stations"),
+    )
+        bad = deepcopy(payload)
+        mutate!(bad)
+        @test_throws ArgumentError validate_payload(bad)
+    end
+end

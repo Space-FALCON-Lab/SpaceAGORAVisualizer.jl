@@ -94,12 +94,28 @@ function _validated_interlinks(block, sats::Int)
     _require_version("interlinks block", get(block, "schema", nothing), 1)
     links = _required(block, "links", "interlinks")
     links isa AbstractVector || throw(ArgumentError("interlinks.links must be an array."))
+    stations = get(block, "stations", [])
+    stations isa AbstractVector || throw(ArgumentError("interlinks.stations must be an array."))
+    nodes = Set{Int}()
+    for station in stations
+        station isa AbstractDict || throw(ArgumentError("interlinks.stations entries must be objects."))
+        node = get(station, "node", nothing)
+        node isa Integer && !(node isa Bool) && node < 0 && !(node in nodes) ||
+            throw(ArgumentError("Station nodes must be unique negative integers."))
+        push!(nodes, node)
+        name = get(station, "name", nothing)
+        name isa AbstractString && !isempty(name) || throw(ArgumentError("A station needs a name."))
+        position = get(station, "position_m", nothing)
+        position isa AbstractVector && length(position) == 3 &&
+            all(x -> x isa Real && !(x isa Bool) && isfinite(x), position) ||
+            throw(ArgumentError("A station needs three finite planet-fixed coordinates in meters."))
+    end
     for link in links
         link isa AbstractDict || throw(ArgumentError("interlinks.links entries must be JSON objects."))
         for key in ("a", "b")
             value = _required(link, key, "interlinks.links[]")
-            value isa Integer && !(value isa Bool) && 1 <= value <= sats ||
-                throw(ArgumentError("interlinks.links[].$key must be a spacecraft number in 1:$sats."))
+            value isa Integer && !(value isa Bool) && (1 <= value <= sats || value in nodes) ||
+                throw(ArgumentError("interlinks.links[].$key must name a spacecraft in 1:$sats or a declared station."))
         end
         _required(link, "kind", "interlinks.links[]") isa AbstractString ||
             throw(ArgumentError("interlinks.links[].kind must be a string."))
