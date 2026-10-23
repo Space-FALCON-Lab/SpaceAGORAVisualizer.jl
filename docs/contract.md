@@ -16,7 +16,7 @@ and `options` objects. An optional `mission` object carries recorded execution
 history, and an optional `interlinks` object a run's link schedule. Historical payloads without `viewer_schema` are accepted
 as version 1 only if `scene.schema` is 1. Unknown explicit versions are refused.
 The current renderer and scene contract remain version 1; package version
-`0.1.0` is a separate release identifier.
+`0.2.0` is a separate release identifier.
 
 `scene` describes the central body, epoch, spacecraft geometry and sampled body
 rotation. `frames.count` is the retained row count and `frames.sats` the
