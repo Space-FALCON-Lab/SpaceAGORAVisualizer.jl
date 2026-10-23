@@ -1,4 +1,4 @@
-// Interlinks between spacecraft, from the payload's optional `interlinks` block:
+// Interlinks between spacecraft and rotating ground stations, from the optional block:
 // each link is a segment between its two spacecraft's interpolated positions,
 // drawn while the link is active and, dimmed, while it is only in contact (could
 // close). A directed link fades from its transmitter to its receiver. Without
@@ -8,6 +8,7 @@
 // its end only when that end is the history's last time.
 import * as THREE from 'three';
 import { decodeFloatBlock } from 'viewer/data.js';
+import { makeLabelSprite } from 'viewer/spacecraft.js';
 
 const KIND_COLORS = [['LaserMomentumLink', '#ff5c8a'], ['PowerBeamLink', '#ffb347'], ['DataLink', '#5cc8ff']];
 const OTHER_COLOR = '#c7a6ff';
@@ -66,6 +67,33 @@ export function createLinks(spec, frames, options = {}) {
   group.name = 'interlinks';
   const links = (spec && spec.links) || [];
   const count = links.length;
+  const stations = (spec && spec.stations) || [];
+  if (stations.length && typeof options.rotationAt !== 'function') throw new Error('Ground stations need the planet rotation.');
+  const stationIndex = new Map(stations.map((station, i) => [station.node, i]));
+  if (stationIndex.size !== stations.length || stations.some((s) => !Number.isInteger(s.node) || s.node >= 0 ||
+      typeof s.name !== 'string' || !s.name.length || !Array.isArray(s.position_m) || s.position_m.length !== 3 || !s.position_m.every(Number.isFinite))) {
+    throw new Error('Ground stations need unique negative nodes, names and finite planet-fixed positions.');
+  }
+  for (const link of links) for (const node of [link.a, link.b]) {
+    if (!Number.isInteger(node) || node === 0 || (node < 0 && !stationIndex.has(node))) throw new Error('Unknown interlink endpoint.');
+  }
+  const stationPositions = stations.map(() => new Float64Array(3));
+  const rotation = new THREE.Quaternion(), site = new THREE.Vector3(), worldSite = new THREE.Vector3();
+  const stationGeometry = new THREE.BufferGeometry();
+  stationGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(stations.length * 3), 3));
+  const markers = new THREE.Points(stationGeometry, new THREE.PointsMaterial({ color: '#88f0bc', size: 7, sizeAttenuation: false }));
+  markers.name = 'ground-stations';
+  markers.frustumCulled = false;
+  const labels = typeof document === 'undefined' ? [] : stations.map((station) => {
+    const label = makeLabelSprite(station.name, '#88f0bc');
+    label.material.depthTest = true;
+    return label;
+  });
+  let labelsWanted = true;
+  function endpointAt(t, node, out) {
+    if (node > 0) frames.positionAt(t, node - 1, out);
+    else out.set(stationPositions[stationIndex.get(node)]);
+  }
   const active = linkWindows(spec && spec.active, count);
   const contact = linkWindows(spec && spec.contact, count);
   // The history's span; older payloads give none, and the last time is then the
@@ -83,6 +111,7 @@ export function createLinks(spec, frames, options = {}) {
   const activeLine = segments(count, options.opacity ?? 0.95);
   const contactLine = segments(count, options.contactOpacity ?? CONTACT_OPACITY);
   group.add(contactLine, activeLine);
+  if (stations.length) group.add(markers, ...labels);
   // Colours: the transmitter's end at the kind's colour, the receiver's end of a
   // directed link lightened toward white.
   const white = new THREE.Color('#ffffff');
@@ -101,6 +130,7 @@ export function createLinks(spec, frames, options = {}) {
     group,
     links,
     count,
+    stationCount: stations.length,
     lastTime,
     historyStart,
     kinds,
@@ -116,14 +146,36 @@ export function createLinks(spec, frames, options = {}) {
     activeAt,
     contactAt,
     // anchorKm: the floating origin the group sits at (as the markers' group).
-    update(t, anchorKm) {
+    update(t, anchorKm, camera) {
       group.position.set(anchorKm[0], anchorKm[1], anchorKm[2]);
+      if (stations.length) {
+        options.rotationAt(t, rotation);
+        group.updateWorldMatrix(true, false);
+        const positions = stationGeometry.getAttribute('position').array;
+        stations.forEach((station, i) => {
+          site.fromArray(station.position_m).multiplyScalar(0.001).applyQuaternion(rotation);
+          site.toArray(stationPositions[i]);
+          site.set(site.x - anchorKm[0], site.y - anchorKm[1], site.z - anchorKm[2]);
+          site.toArray(positions, i * 3);
+          const label = labels[i];
+          if (label) {
+            label.position.copy(site);
+            label.visible = labelsWanted;
+            if (camera) {
+              worldSite.copy(site).applyMatrix4(group.matrixWorld);
+              const height = 0.028 * camera.position.distanceTo(worldSite);
+              label.scale.set(height * label.userData.aspect, height, 1);
+            }
+          }
+        });
+        stationGeometry.getAttribute('position').needsUpdate = true;
+      }
       const activePos = activeLine.geometry.getAttribute('position').array;
       const contactPos = contactLine.geometry.getAttribute('position').array;
       shown = 0;
       links.forEach((link, i) => {
-        frames.positionAt(t, link.a - 1, ra);
-        frames.positionAt(t, link.b - 1, rb);
+        endpointAt(t, link.a, ra);
+        endpointAt(t, link.b, rb);
         const present = Number.isFinite(ra[0]) && Number.isFinite(rb[0]);
         const isActive = present && activeAt(i, t);
         const isContact = present && contactAt(i, t);
@@ -143,5 +195,6 @@ export function createLinks(spec, frames, options = {}) {
     },
     activeCount: () => shown,
     setVisible(v) { group.visible = v; },
+    setLabelsVisible(v) { labelsWanted = v; },
   };
 }

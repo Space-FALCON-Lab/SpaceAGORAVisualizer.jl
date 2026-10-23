@@ -107,9 +107,17 @@ with the last segment taking precedence at the terminal instant.
 `interlinks.schema` is 1. `interlinks.links` lists the links that appear in a
 run's link schedule: each has `link` (its number in the run), `kind` (the link
 kind's type name, for example `LaserMomentumLink` or `DataLink{ShannonBudget}`),
-`directed`, and the spacecraft `a` and `b` (numbered from 1, as
-`paths[].target`) with their terminals. For a directed link `a` is the
-transmitter.
+`directed`, and endpoints `a` and `b` with their terminals. Positive endpoints
+are spacecraft numbers starting at 1, as `paths[].target`; negative endpoints
+refer to ground stations. For a directed link `a` is the transmitter.
+
+The optional `interlinks.stations` array supplies each station's unique negative
+`node`, nonempty `name`, and three finite `position_m` coordinates in the
+planet-fixed frame. The viewer turns these fixed sites using the same rotation
+as the globe, draws a green marker and name, and connects station links to them.
+Station names follow the labels toggle; the interlinks toggle hides both the
+stations and their links. Unknown station references are refused. An absent
+stations array retains the spacecraft-only contract.
 
 `interlinks.active` holds the spans over which each link was selected:
 `count`, `index` (0-based positions in `links`), and `start_s` and `end_s`
@@ -124,13 +132,13 @@ not keep the earlier schedule. The renderer says so beside the toggle.
 
 A link is drawn at playback time `t` when `start_s <= t < end_s`, and at
 `t == end_s` when that is `history_end_s` (for a payload without it, the latest
-window end); contact-only spans are drawn dimmed. Each link joins its two
-spacecraft's interpolated positions; terminal mounting points are not drawn.
+window end); contact-only spans are drawn dimmed. Each link joins its two endpoints: interpolated spacecraft positions or rotating
+station positions; terminal mounting points are not drawn.
 Beside the toggle, a coloured square per link kind and the number of links active
 at the playback time form the legend.
 
 The renderer checks the block's structure (version, spacecraft numbers within
-`frames.sats`, positions within `links`, equal-length blocks, finite times with
+`frames.sats`, declared negative station nodes, positions within `links`, equal-length blocks, finite times with
 `start_s <= end_s`, a finite span with its start not after its end) without
 changing it. The block is an optional addition to
 viewer schema 1 and service contract 1: historical payloads remain valid, and
