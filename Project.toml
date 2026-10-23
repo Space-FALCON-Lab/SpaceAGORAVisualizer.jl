@@ -1,6 +1,6 @@
 name = "SpaceAGORAVisualizer"
 uuid = "a4677e92-0b7f-4d10-9ebd-8cde6a49f03a"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["SpaceAGORA Contributors"]
 
 [deps]

@@ -16,21 +16,20 @@ and [credits](#credits).
 
 ## Installation
 
-Use Julia 1.12 and a separate environment to install the public development
-version:
+Use Julia 1.12 and a separate environment to install version 0.2.0:
 
 ```julia
 using Pkg
 Pkg.activate("viewer-env")
-Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git")
+Pkg.add(url="https://github.com/Space-FALCON-Lab/SpaceAGORAVisualizer.jl.git", rev="v0.2.0")
 ```
 
 The environment is created as `viewer-env` in Julia's current directory.
 Continue with the first example in the same session. In a later session, start
 Julia with `julia --project=/absolute/path/to/viewer-env`.
 
-This installs the repository's default branch. The package is an unregistered
-0.1.0 development version, with no tagged release yet. For a local checkout,
+The package is unregistered; the command selects the `v0.2.0` release tag.
+For a local checkout,
 replace `Pkg.add` with `Pkg.develop(path="/absolute/path/to/SpaceAGORAVisualizer.jl")`.
 
 If you are running missions from a SpaceAGORA checkout, use its
@@ -127,7 +126,7 @@ interpolates the displayed trajectory; it does not rerun segment transitions.
 | Item | Supported or checked |
 | --- | --- |
 | Julia | 1.12; the package declares `julia = "1.12"` |
-| Package version | 0.1.0 development version; no tagged release yet |
+| Package version | 0.2.0; install with tag `v0.2.0` |
 | Renderer service, viewer payload and scene | Version 1; unknown explicit versions are rejected |
 | Historical payloads | Accepted without `viewer_schema` when `scene.schema` is 1 |
 | Recorded mission history | Optional schema 1; older payloads remain usable |
