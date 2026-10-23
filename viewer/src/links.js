@@ -26,7 +26,15 @@ export function linkWindows(block, linkCount) {
   if (!block || !block.count) return out;
   const start = decodeFloatBlock(block.start_s, 'f64'), end = decodeFloatBlock(block.end_s, 'f64');
   for (let i = 0; i < block.count; i++) out[block.index[i]].push([start[i], end[i]]);
-  for (const list of out) list.sort((a, b) => a[0] - b[0]);
+  for (const list of out) {
+    list.sort((a, b) => a[0] - b[0]);
+    let kept = 0;
+    for (const window of list) {
+      if (kept && window[0] <= list[kept - 1][1]) list[kept - 1][1] = Math.max(list[kept - 1][1], window[1]);
+      else list[kept++] = window;
+    }
+    list.length = kept;
+  }
   return out;
 }
 
@@ -67,6 +75,9 @@ export function createLinks(spec, frames, options = {}) {
   if (!Number.isFinite(spec && spec.history_end_s)) {
     for (const lists of [active, contact]) for (const list of lists) for (const [, end] of list) lastTime = Math.max(lastTime, end);
   }
+  const recordedAt = (t) => (historyStart === null || t >= historyStart) && t <= lastTime;
+  const activeAt = (i, t) => recordedAt(t) && inWindow(active[i], t, lastTime);
+  const contactAt = (i, t) => recordedAt(t) && !activeAt(i, t) && inWindow(contact[i], t, lastTime);
   // Each kind present, once, with its colour, for the legend.
   const kinds = [...new Set(links.map((link) => String(link.kind)))].map((kind) => [kind, linkColor(kind)]);
   const activeLine = segments(count, options.opacity ?? 0.95);
@@ -98,12 +109,12 @@ export function createLinks(spec, frames, options = {}) {
     statusAt(t) {
       if (historyStart !== null && t < historyStart) return `not recorded before ${historyStart} s`;
       let n = 0;
-      for (let i = 0; i < count; i++) if (inWindow(active[i], t, lastTime)) n++;
+      for (let i = 0; i < count; i++) if (activeAt(i, t)) n++;
       return `${n} of ${count} active`;
     },
     // Whether link `i` is active, or only in contact, at time `t`.
-    activeAt: (i, t) => inWindow(active[i], t, lastTime),
-    contactAt: (i, t) => !inWindow(active[i], t, lastTime) && inWindow(contact[i], t, lastTime),
+    activeAt,
+    contactAt,
     // anchorKm: the floating origin the group sits at (as the markers' group).
     update(t, anchorKm) {
       group.position.set(anchorKm[0], anchorKm[1], anchorKm[2]);
@@ -114,8 +125,8 @@ export function createLinks(spec, frames, options = {}) {
         frames.positionAt(t, link.a - 1, ra);
         frames.positionAt(t, link.b - 1, rb);
         const present = Number.isFinite(ra[0]) && Number.isFinite(rb[0]);
-        const isActive = present && inWindow(active[i], t, lastTime);
-        const isContact = present && !isActive && inWindow(contact[i], t, lastTime);
+        const isActive = present && activeAt(i, t);
+        const isContact = present && contactAt(i, t);
         for (const [array, on] of [[activePos, isActive], [contactPos, isContact]]) {
           if (on) {
             array.set([ra[0] - anchorKm[0], ra[1] - anchorKm[1], ra[2] - anchorKm[2],

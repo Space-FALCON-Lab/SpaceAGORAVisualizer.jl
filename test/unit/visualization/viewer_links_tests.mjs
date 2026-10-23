@@ -52,6 +52,16 @@ test('windows decode from base64 and plain arrays, per link and sorted', () => {
   assert.deepEqual(linkWindows({ count: 2, index: [0, 0], start_s: [8, 1], end_s: [9, 2] }, 1), [[[1, 2], [8, 9]]]);
 });
 
+test('overlapping and same-start windows retain the whole active union', () => {
+  for (const starts of [[0, 2], [0, 0]]) {
+    const windows = linkWindows({ count: 2, index: [0, 0], start_s: starts, end_s: [10, 3] }, 1);
+    assert.deepEqual(windows, [[[0, 10]]]);
+    assert.equal(inWindow(windows[0], 5, 10), true);
+    assert.equal(inWindow(windows[0], 10, 10), true);
+    assert.equal(inWindow(windows[0], 11, 10), false);
+  }
+});
+
 test('colours follow the kind, with or without type parameters', () => {
   assert.equal(linkColor('LaserMomentumLink'), linkColor('LaserMomentumLink'));
   assert.equal(linkColor('DataLink{FixedRateBudget}'), linkColor('DataLink'));
@@ -111,6 +121,15 @@ test('the history span sets the last time and the legend', () => {
   const resumed = createLinks({ ...payload.interlinks, history_start_s: 3, history_end_s: 10 }, frames, {});
   assert.equal(resumed.statusAt(2), 'not recorded before 3 s');
   assert.equal(resumed.statusAt(3), '1 of 2 active');
+  assert.equal(resumed.activeAt(0, 2), false);
+  assert.equal(resumed.contactAt(1, 2), false);
+  assert.equal(resumed.update(2, [0, 0, 0]), 0);
+  for (const line of resumed.group.children) assert.ok(line.geometry.getAttribute('position').array.every((x) => x === 0));
+  assert.equal(resumed.update(3, [0, 0, 0]), 1);
+  const ended = createLinks({ ...payload.interlinks, history_start_s: 0, history_end_s: 7 }, frames, {});
+  assert.equal(ended.activeAt(1, 8), false);
+  assert.equal(ended.contactAt(1, 8), false);
+  assert.equal(ended.update(8, [0, 0, 0]), 0);
   // null, as SpaceAGORA writes an unknown span, falls back.
   assert.equal(createLinks({ ...payload.interlinks, history_start_s: null, history_end_s: null }, frames, {}).lastTime, 10);
 });
