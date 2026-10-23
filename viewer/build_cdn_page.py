@@ -40,7 +40,7 @@ VIEWER = pathlib.Path(__file__).resolve().parent
 
 # Renderer modules in dependency order; standalone.js belongs to the form page only.
 MODULE_ORDER = ["data.js", "colormaps.js", "timeline.js", "globe.js", "atmosphere.js", "spacecraft.js", "lod.js",
-                "ensemble.js", "paths.js", "references.js", "groundtrack.js", "video.js", "plots.js", "terrain.js",
+                "ensemble.js", "paths.js", "links.js", "references.js", "groundtrack.js", "video.js", "plots.js", "terrain.js",
                 "plumes.js", "dust.js", "lighting.js", "ui.js", "main.js"]
 PATHTRACER_SPECIFIERS = ("three-gpu-pathtracer", "three-mesh-bvh", "three/examples/jsm/postprocessing/Pass.js")
 PAYLOAD_MARKER = re.compile(r"\nwindow\.SPACEAGORA_VIEWER = (.*?);\n</script>", re.S)

@@ -2,7 +2,7 @@
 # Module inventories, import-map construction and HTML substitution retain the
 # original implementation. Input contract validation lives in the public wrapper.
 const VIEWER_DIR = normpath(joinpath(@__DIR__, "..", "viewer"))
-const VIEWER_MODULES = ("data.js", "colormaps.js", "globe.js", "atmosphere.js", "spacecraft.js", "lod.js", "ensemble.js", "paths.js", "references.js", "groundtrack.js", "video.js", "plots.js", "terrain.js", "plumes.js", "timeline.js", "dust.js", "lighting.js", "ui.js", "main.js")
+const VIEWER_MODULES = ("data.js", "colormaps.js", "globe.js", "atmosphere.js", "spacecraft.js", "lod.js", "ensemble.js", "paths.js", "links.js", "references.js", "groundtrack.js", "video.js", "plots.js", "terrain.js", "plumes.js", "timeline.js", "dust.js", "lighting.js", "ui.js", "main.js")
 const VIEWER_VENDOR = (
     "three" => joinpath("vendor", "three.module.js"),
     "three/addons/controls/OrbitControls.js" => joinpath("vendor", "OrbitControls.js"),

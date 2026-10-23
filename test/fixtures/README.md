@@ -23,3 +23,11 @@ contract; it is not a scientific validation trajectory.
 `mission_precision_viewer.json` uses default Float32 playback times and exact
 mission timestamps at 0.1, 0.7 and 0.9 seconds. It checks both rounding directions
 and an internal segment boundary without changing the recorded history.
+
+`interlinks_viewer.json` extends the small synthetic trajectory to three
+spacecraft and adds an `interlinks` block in the form SpaceAGORA's
+`interlink_payload` writes it: a laser momentum link between spacecraft 1 and 2,
+active over the first five seconds, and a directed data link from spacecraft 1 to
+3, active over the last five and in contact throughout. The active windows are
+base64 Float64 blocks and the contact window plain arrays, so both encodings are
+read. It tests the optional block and its drawing; it is not a simulation result.

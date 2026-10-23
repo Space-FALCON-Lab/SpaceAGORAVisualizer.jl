@@ -1,0 +1,30 @@
+{
+  "base_commit": "75b32bc610e3227035810a4c8e12a515106c5a62",
+  "purpose": "Draw interlinks from the optional interlinks block SpaceAGORA writes for a run with interlinks (a segment between two spacecraft while their link is active, dimmed while it is only in contact), with a toggle; without that block nothing changes.",
+  "files": [
+    {
+      "path": "viewer/src/main.js",
+      "previous_sha256": "cb0eec06f90a4b2d9582440ea6bb67ccae098f67ec088c46b20a00d52852e293",
+      "previous_git_blob": "50f5a6ad6d5d35d556804b93b6f039fb29491b80",
+      "sha256": "1bb7625e0a93d0702d57364d50025af717878c1fe87b4fe4a1b149a7546baaa6"
+    },
+    {
+      "path": "viewer/src/ui.js",
+      "previous_sha256": "33615deb83e4edd5c25114282f73c4d7d0651581886ff1e912dfbbba73093c65",
+      "previous_git_blob": "b0f132bf07e3d1ccaa2a8c0dc6c73b166203b191",
+      "sha256": "91aa48c4ea09b12ab85e624ffa98d1ff7939caaae882e44c40e229eae536e3cc"
+    },
+    {
+      "path": "viewer/dev.html",
+      "previous_sha256": "50b2008ee57b992b6edb996ff317d49f7888654d535c5db8723044c0d5141846",
+      "previous_git_blob": "d419e4c4147fcdc2031179a341f5815ce4e3f9ce",
+      "sha256": "3bc83ff22441743ec6eece108f513ba573e1a08593b97ad3b42856464dbae5a5"
+    }
+  ],
+  "added": [
+    {
+      "path": "viewer/src/links.js",
+      "sha256": "6110ad764654bf47f5875bbb2c5a48b3cad8011925ab7cf29c9fd4f7206ead12"
+    }
+  ]
+}
