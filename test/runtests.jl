@@ -329,3 +329,9 @@ end
         @test_throws ArgumentError validate_payload(bad)
     end
 end
+
+include(joinpath(@__DIR__, "support", "mission_history_contract.jl"))
+@testset "Shared mission-history contract stays standalone" begin
+    MissionHistoryContract.check(V._validated_mission_history)
+    @test !any(x -> x.name == "SpaceAGORA", keys(Base.loaded_modules))
+end
