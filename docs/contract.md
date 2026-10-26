@@ -154,3 +154,19 @@ changing it. The block is an optional addition to
 viewer schema 1 and service contract 1: historical payloads remain valid, and
 older renderers ignore it. SpaceAGORA writes it from the run's link schedule and
 counts it in the exporter's data budget.
+
+## Shared mission-history validation
+
+`src/mission_history.jl` is generated from SpaceAGORA's small canonical
+`mission_history.jl` owner in `scripts/companion_support/`. The same generation
+step supplies versioned JSON acceptance examples and their test runner under
+`test/support/`. The standalone viewer needs no SpaceAGORA installation at
+runtime or during its payload tests. Its generated-source CI fetches only the
+support tooling from the exact commit recorded in `SharedSupport.toml`.
+
+Change the canonical source, regenerate both core and viewer with
+`scripts/sync_companion_support.jl --write`, and update the viewer's immutable
+support pin. Do not edit generated copies independently. The shared tests cover
+valid, absent, empty, malformed, discontinuous and unsupported histories, plus
+precise boundary times and unchanged-object behavior. Existing viewer rendering
+and file-preservation checks remain separate.
