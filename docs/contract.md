@@ -168,16 +168,18 @@ counts it in the exporter's data budget.
 
 ## Shared mission-history validation
 
-`src/mission_history.jl` is generated from SpaceAGORA's small canonical
-`mission_history.jl` owner in `scripts/companion_support/`. The same generation
-step supplies versioned JSON acceptance examples and their test runner under
-`test/support/`. The standalone viewer needs no SpaceAGORA installation at
-runtime or during its payload tests. Its generated-source CI fetches only the
-support tooling from the exact commit recorded in `SharedSupport.toml`.
+SpaceAGORA and this package validate mission histories with the same code.
+`src/mission_history.jl` is generated from SpaceAGORA's
+`scripts/companion_support/mission_history.jl`, and the same step generates the
+versioned JSON examples and their test runner in `test/support/`. The viewer
+still needs no SpaceAGORA installation, either to run or for its payload tests;
+only the Shared companion support workflow fetches SpaceAGORA's support tooling,
+from the commit recorded in `SharedSupport.toml`, to check that the copies match.
 
-Change the canonical source, regenerate both core and viewer with
-`scripts/sync_companion_support.jl --write`, and update the viewer's immutable
-support pin. Do not edit generated copies independently. The shared tests cover
-valid, absent, empty, malformed, discontinuous and unsupported histories, plus
-precise boundary times and unchanged-object behavior. Existing viewer rendering
-and file-preservation checks remain separate.
+To change the validation, edit the source in SpaceAGORA, regenerate the copies in
+both repositories with `scripts/sync_companion_support.jl --write`, and update
+the commit in `SharedSupport.toml`. Do not edit a generated copy by hand. The
+shared tests cover valid, absent, empty, malformed, discontinuous and
+unsupported histories, exact boundary times, and checking that validation leaves
+the history unchanged. The viewer's own rendering and file-preservation tests
+are separate.
