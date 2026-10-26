@@ -1,18 +1,18 @@
 # SpaceAGORA viewer
 
-Browser viewer for a finished run: the central body with its surface texture,
-every spacecraft as a marker with a trail, a playback timeline, and an
-inertial or planet-fixed camera. It never runs inside the integrator; it reads
-scene and frame data exported from a completed run. The core integration prepares
-that payload from the result bundle and saved scene sidecar.
+A browser viewer for a finished run: the central body with its surface texture,
+every spacecraft as a marker with a trail, a playback timeline, and an inertial
+or planet-fixed camera. It never runs inside the integrator; it reads scene and
+frame data exported from a completed run. SpaceAGORA prepares that payload from
+the result bundle and the saved scene sidecar.
 
-This integration provides trajectory playback and display geometry. The browser
-can recognize optional terrain and plume payload blocks, but this version does
-not add terrain export, lunar landing dynamics or plume-surface physics.
+The viewer only draws what the run saved. It draws terrain and engine-plume
+blocks when SpaceAGORA exports them, but it adds no landing dynamics or
+plume-surface physics of its own.
 
-This renderer now belongs to SpaceAGORAVisualizer.jl. See the package
-[README](../README.md) and [payload contract](../docs/contract.md) for standalone
-installation and file inputs. The original design record is retained in
+The renderer was extracted from SpaceAGORA into this package. See the package
+[README](../README.md) for installation and the [payload contract](../docs/contract.md)
+for the input format. The original design record is kept in
 [SpaceAGORA](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/265c9c6bd002d31aba77f4bb7cc46b48b48b98ed/docs/architecture/interactive_visualization_plan.md).
 
 Use the [controls](#controls) and [display features](#close-up-models) when
@@ -30,17 +30,18 @@ using SpaceAGORAVisualizer
 page = visualize("output/simulation_results_viewer.json")
 ```
 
-The file is an exported viewer payload containing the scene and retained frame
-data. An Arrow results file or a scene sidecar alone is not accepted by this
-standalone package; core's integration prepares the payload from those inputs.
-The returned HTML embeds three.js, these modules and the supplied data. It opens
-from disk without a server or network when all input assets are embedded.
+The file is an exported viewer payload containing the scene and the retained
+frame data. This package does not accept an Arrow results file or a scene
+sidecar on its own; SpaceAGORA prepares the payload from those. `visualize`
+returns the path of the page it wrote. The page embeds three.js, these modules and
+the supplied data, and opens from disk without a server or network when all input
+assets are embedded.
 Explicit CDN builds and models with external buffer or texture URLs can still
 request those resources.
 
-The renderer preserves options already saved in the payload, including the
-camera frame, trails, paths and models. Choosing saved fields, decimation and
-scientific frame metadata belongs to core's export step.
+The renderer keeps the options saved in the payload, including the camera
+frame, trails, paths and models. The saved fields, decimation and frame metadata
+are chosen by SpaceAGORA's export step.
 
 ## Layout
 
@@ -70,9 +71,12 @@ scientific frame metadata belongs to core's export step.
 | `src/main.js` | scene setup and the render loop |
 | `template.html` | page skeleton the Julia bundler fills |
 | `dev.html` | development harness (see below) |
+| `standalone.html`, `src/standalone.js`, `build_standalone.py` | the CSV/JSON import page (see [Standalone page](#standalone-page)) |
+| `build_cdn_page.py` | rewrites an exported page for hosts that refuse `data:` scripts (see [External-host page](#external-host-page)) |
 
-The Julia HTML assembly is `src/render.jl` in this package. The core exporter
-produces its input payload; the renderer does not import SpaceAGORA.
+Paths in this table are relative to `viewer/`. The Julia HTML assembly is in the
+repository's own `src/render.jl`. SpaceAGORA's exporter produces the input
+payload; the renderer does not import SpaceAGORA.
 Modules import each other through bare specifiers (`viewer/globe.js`,
 `three`) that the page's import map resolves, to `data:` URLs in the bundled
 file and to local paths in `dev.html`. No build tool is involved.
@@ -118,25 +122,37 @@ editing renderer modules. It needs neither a completed SpaceAGORA run nor Julia.
 
 ## Controls
 
-Space plays and pauses, the arrow keys step by one speed unit, the slider
-scrubs. Drag to orbit, wheel to zoom, right-drag to pan. "Planet-fixed"
-counter-rotates the scene so the body stands still and orbits precess past it.
+Space plays and pauses, and the left and right arrow keys move back or forward
+by one second of playback at the current speed; keys are ignored while a menu or
+input has focus. The slider scrubs. Drag to orbit, use the wheel to zoom and
+right-drag to pan. "Planet-fixed" counter-rotates the scene so the body stands
+still and orbits precess past it.
 
 Click a spacecraft marker or visible model to select it: the selection panel
 at the top right shows its
 altitude, geodetic latitude and longitude, radius, speed, mass (when the run
 saved it) and whether it is currently drawn as a marker or a 3D model.
 "Follow" (or F) keeps the selected spacecraft at the center and moves the
-camera close enough to see the assembly; Esc deselects. The trail selector
+camera close enough to see the assembly. Esc first clears a picked face, then the
+selection. The trail selector
 sets the history drawn behind each spacecraft in orbits (the period is
 estimated from periapsis passages in the saved trajectory, so a run shorter
 than one orbit shows "longer than run" and the trail covers the whole run).
 
 Click a quantity's name or value in the selection panel to plot its history.
-The **log** checkbox switches between logarithmic and linear axes; zeros are
-gaps on a logarithmic axis. Additional saved columns can be added with
-`channels`; see [Plot another saved value](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#plot-another-saved-value)
-for an example and explanations of absent rows, missing samples and held states.
+The "log" checkbox switches between logarithmic and linear axes; zeros are gaps
+on a logarithmic axis. Other saved columns can be added with `channels`; see
+[Plot another saved value](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/v0.7.1/docs/src/user/visualization.md#plot-another-saved-value)
+for an example and for how absent rows, missing samples and held states appear.
+
+The toolbar also has checkboxes for each overlay (labels, planned paths,
+interlinks, reference ghosts, ground tracks, graticule, 3D models, thrusters,
+plumes, facets, body axes, heating, dust and the atmosphere layers; several
+appear only when the payload has that data), a lighting selector, "Reset view",
+and "Save video…". Its dialog renders the animation to an MP4 at the canvas size
+or a preset resolution; where the browser has no H.264 encoder, "Record WebM
+(10 s)" records ten seconds of live playback instead. When a run has mission segments, "Segment" and "Transition"
+menus jump to them.
 
 ## Close-up models
 
@@ -153,9 +169,11 @@ and blue for x, y, z. Each of these has a toggle. A 3D model passed through
 (STL, OBJ, glTF or GLB, parsed in the browser) replaces the boxes for that
 spacecraft; the glyphs stay.
 
-Runs with at most 64 spacecraft embed positions as Float64 so the meter-scale
-models do not jitter at planetary distances; follow mode also re-centers the
-scene on the followed spacecraft for the same reason.
+SpaceAGORA embeds positions as Float64 by default for runs with at most 64
+spacecraft, and for larger runs when that still fits the same frames, so that the
+meter-scale models do not jitter at planetary distances; its
+`position_precision` option can force Float64 or Float32. Follow mode also
+re-centers the scene on the followed spacecraft for the same reason.
 
 ## Heating overlay
 
@@ -204,13 +222,16 @@ spacecraft.
 
 ## Texture resolution
 
-`data/textures/manifest.toml` may hold several tiers per body. The exporter
+In SpaceAGORA, `data/scene/textures/manifest.toml` may hold several tiers per
+body. The exporter
 embeds 4k by default (`texture_resolution="4k"`) for both individual runs
 and ensembles. Earth, Mars and Moon provide an opt-in 8k tier; use
 `texture_resolution="8k"` or `:best` for the largest available tier. Venus
-and Titan fall back to 4k. This companion does not bundle those textures. Its standalone builder defaults
-to `--textures none`; pass `--textures-dir=/path/to/textures` and
-`--textures 4k` or `--textures 8k` to use an existing catalog. Higher tiers increase HTML and decoded image size. The globe
+and Titan fall back to 4k. This package does not include those textures. Its
+standalone builder defaults to `--textures none`; to use an existing catalog,
+pass `--textures-dir=/path/to/textures` (for example a SpaceAGORA checkout's
+`data/scene/textures`) and `--textures 4k` or `--textures 8k`. Higher tiers
+increase the HTML size and the decoded image size. The globe
 downscales on load when the GPU's maximum texture size is smaller than the
 image, and the info panel shows the tier and the GPU limit.
 
@@ -258,8 +279,8 @@ name and an epoch: IAU rotation table, box spacecraft, model override,
 reference ghost, and ensembles from several files. `data.js` accepts typed
 arrays as well as base64 blocks for that reason. A `sc{i}_heat_rate` column
 is read in W/cm², the unit SpaceAGORA saves, and stored as W/m² in
-`frames.heat_rate_w_m2`. See the
-[standalone data-file guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/main/docs/src/user/visualization.md#standalone-files).
+`frames.heat_rate_w_m2`. See SpaceAGORA's
+[standalone data-file guide](https://github.com/Space-FALCON-Lab/SpaceAGORA.jl/blob/v0.7.1/docs/src/user/visualization.md#standalone-files).
 
 ## External-host page
 
@@ -361,6 +382,16 @@ verified study pressure or a replacement thermal solution.
 
 ### Lab branding
 
-The viewer displays the Space-FALCON Lab logo in the upper-right corner, above the selection panel. The approved primary logo B (1221 × 1288 PNG) is embedded unchanged in the shared UI module, so exported and standalone pages need no external image request. The source is `SpaceFALCON_Lab_Logo_Main.png` from the Space-FALCON Lab brand library; its SHA-256 is recorded beside the data URL. The badge is 150px wide on desktop and 112px on narrow screens; the lab wordmark remains visible. Existing exported pages must be regenerated to pick up viewer changes. The badge is a page overlay; the canvas-only video export does not include it.
+The viewer shows the Space-FALCON Lab logo in the upper-right corner, above the
+selection panel. The lab's primary logo (`SpaceFALCON_Lab_Logo_Main.png`, a
+1221 × 1288 PNG) is embedded unchanged in the shared UI module, with its SHA-256
+recorded beside the data URL, so exported and standalone pages make no external
+image request. The badge is 150 px wide on desktop and 112 px on narrow screens,
+96 px on short screens, and hidden on very short ones. It is a page overlay, so
+the canvas-only video export does not include it. Pages exported earlier must be
+regenerated to show viewer changes.
 
-The viewer retains its dark background (`#060a0f`), which suits the approved logo’s dark backdrop. The current PNG is a raster export with a partly transparent dark background, not a clean transparent or vector master. Embedding the unchanged 1.65 MB PNG preserves the approved artwork and adds about 2.20 MB of base64 text to the UI module; no image fetch or dependency is added.
+The viewer keeps its dark background (`#060a0f`), which matches the logo's dark
+backdrop: the PNG is a raster export with a partly transparent dark background,
+not a transparent or vector master. Embedding the 1.65 MB PNG adds about 2.20 MB of
+base64 text to the UI module, but no image request or dependency.

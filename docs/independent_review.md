@@ -1,5 +1,10 @@
 # Independent extraction review
 
+> This is a dated record (13 October 2026) of the review of the 0.1.0
+> preparation, kept as history and not updated since. Version 0.1.0 was never
+> tagged; the first release is 0.2.0, which has hosted CI. For installation and
+> the current checks, see the [README](../README.md).
+
 This review covers the standalone SpaceAGORAVisualizer 0.1.0 preparation. It
 accepts the local rendering boundary and its bounded validation; it does not
 claim hosted CI, a clean remote installation, a published release, or new
