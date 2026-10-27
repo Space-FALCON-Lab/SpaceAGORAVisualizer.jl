@@ -206,7 +206,12 @@ SPACEAGORA_BROWSER_EXECUTABLE=/path/to/chrome node test/browser_smoke.cjs viewer
 These checks exercise rendering and the saved-data contract. They do not certify
 the physical model or the accuracy of a supplied trajectory.
 
-## Credits
+<a id="credits"></a>
+
+## Contributors
+
+- [Giusy Falcone](https://github.com/gfalcon2)
+- [Evan Yu](https://github.com/EvanY14)
 
 The browser renderer was extracted from SpaceAGORA and includes interactive
 viewer work adapted from Evan Yu's
