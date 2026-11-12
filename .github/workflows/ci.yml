@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  julia:
+  julia-versions:
     strategy:
       matrix:
         json-version: ['0.21', '1.13']
@@ -18,6 +18,14 @@ jobs:
       - run: julia --startup-file=no --project=. -e 'using Pkg; Pkg.add(PackageSpec(name="JSON", version=ENV["JSON_VERSION"])); Pkg.test()'
         env:
           JSON_VERSION: ${{ matrix.json-version }}
+  julia:
+    if: always()
+    needs: julia-versions
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$JULIA_RESULT" = success
+        env:
+          JULIA_RESULT: ${{ needs.julia-versions.result }}
   renderer:
     runs-on: ubuntu-latest
     steps:
