@@ -6,13 +6,18 @@ permissions:
   contents: read
 jobs:
   julia:
+    strategy:
+      matrix:
+        json-version: ['0.21', '1.13']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1.12'
-      - run: julia --startup-file=no --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+      - run: julia --startup-file=no --project=. -e 'using Pkg; Pkg.add(PackageSpec(name="JSON", version=ENV["JSON_VERSION"])); Pkg.test()'
+        env:
+          JSON_VERSION: ${{ matrix.json-version }}
   renderer:
     runs-on: ubuntu-latest
     steps:
